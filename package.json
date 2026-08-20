@@ -1,6 +1,6 @@
 {
   "name": "zero-shelter",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Local-first, deterministic security tooling for AI-assisted development.",
   "license": "Apache-2.0",
   "type": "module",
@@ -15,7 +15,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "third-party": "node scripts/third-party.mjs",
-    "judge": "node dist/bin.js judge"
+    "judge": "node dist/bin.js judge",
+    "prepublishOnly": "npm run build && npm test"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
