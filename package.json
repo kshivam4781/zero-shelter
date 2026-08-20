@@ -3,6 +3,20 @@
   "version": "0.0.1",
   "description": "Local-first, deterministic security tooling for AI-assisted development.",
   "license": "Apache-2.0",
+  "contributors": [
+    {
+      "name": "Present_Jay.Dev",
+      "url": "https://github.com/PresentJay"
+    },
+    {
+      "name": "Groot",
+      "url": "https://github.com/msnodeve"
+    },
+    {
+      "name": "Hyeona",
+      "url": "https://github.com/hadevyi"
+    }
+  ],
   "type": "module",
   "engines": {
     "node": ">=20"
