@@ -1,11 +1,13 @@
 # zero-shelter
 
+[English](./README.md) · [한국어](./README.ko.md)
+
 Turns dependency scanner output into a short, deterministic list of what to fix
 now — and stops telling you about the rest.
 
 Local-first. No LLM at runtime, no network calls of its own, no telemetry.
 
-> **Status: early.** The pipeline runs end to end and is covered by 92 tests on
+> **Status: early.** The pipeline runs end to end and is covered by 97 tests on
 > Linux, macOS and Windows. Nothing is published to npm yet.
 
 ## The problem
@@ -59,7 +61,7 @@ you are never told to go install something before you can see output. Installing
 it is worth doing though: it is what lets two sources be reconciled, which is
 where most of the deduplication comes from.
 
-pnpm, yarn v1 and npm 6 report formats are read too.
+pnpm and npm 6 report formats are read too.
 
 ## In CI
 
@@ -80,6 +82,26 @@ There is an irony here worth naming: this project exists because SARIF from
 different tools cannot be reconciled by the tools that consume it. Emitting
 SARIF is not a contradiction — downstream receives one already-judged run
 instead of four raw ones it will fail to merge.
+
+## In your coding agent
+
+A coding agent starts every session blind to what is already broken here, and
+will add a dependency this project has an unfixed advisory for. `zero-shelter
+hook` hands it the same short list you get.
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "npx zero-shelter hook" }] }
+    ]
+  }
+}
+```
+
+It never blocks a prompt and never fails — on any error it stays quiet and exits
+0, because interrupting someone's session over a report they did not ask for is
+worse than saying nothing. See [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md).
 
 ## Options
 
@@ -129,20 +151,40 @@ and we would like better ideas.
 
 ## Honesty about what we measure
 
-We benchmark against externally labelled data and publish the result whether or
-not it flatters us. If the ranking turns out to be about as accurate as sorting
-by severity, that is what this section will say.
+Four external projects, pinned by commit, with the scanner output frozen in
+`bench/captures/` so anyone can reproduce the table offline:
 
-The claim is not better precision. It is far less noise at comparable precision.
+| Repo | Raw reports | After judge | Reduction |
+|---|---|---|---|
+| juice-shop | 155 | 82 | 47% |
+| NodeGoat | 360 | 173 | 52% |
+| dvna | 106 | 51 | 52% |
+| hackathon-starter | 24 | 11 | 54% |
 
-Labelling is done by two people independently with inter-rater agreement
-reported. It is not done by a model: proving a tool works using ground truth its
+`npm run build && node bench/evaluate.mjs` reproduces it. No network, no
+scanners needed.
+
+**This is volume, not precision.** It says the two sources describe the same
+advisories about half the time and that we reconcile them. It does not say the
+survivors are the right ones — that needs ground truth, which does not exist
+yet. Until it does, the honest claim is *fewer items*, not *the right items*.
+
+Labelling will be done by two people independently, blind, with inter-rater
+agreement reported. Not by a model: proving a tool works using ground truth its
 own authors generated is circular, and we would not believe it from anyone else.
+See [bench/README.md](./bench/README.md) for the protocol and the limitations we
+know about, including that the ranking predates the labels.
 
 ## Documentation
 
 - [Architecture](./docs/architecture.md) — layers, sequence diagram, where to add things
 - [v1 scope](./docs/v1-scope.md) — what is in, what is deferred, and why
+- [Agent hook](./docs/AGENT-HOOK.md) — setup, and what it deliberately will not do
+- [Benchmark](./bench/README.md) — pinned targets, frozen captures, labelling protocol
+
+Korean: [README.ko.md](./README.ko.md), [THIRD_PARTY.ko.md](./THIRD_PARTY.ko.md).
+English is the canonical version; a translation that lags is a bug worth
+reporting.
 
 ## Development
 

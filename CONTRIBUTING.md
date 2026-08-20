@@ -77,3 +77,14 @@ approach. Six months from now that is the only part anyone needs.
 
 See [SECURITY.md](https://github.com/zero-shelter/.github/blob/main/SECURITY.md).
 Please do not open a public issue for a security problem.
+
+## Languages
+
+English is canonical. `README.ko.md` and `THIRD_PARTY.ko.md` are the Korean
+versions; `THIRD_PARTY.ko.md` is generated, so it cannot drift, but the Korean
+README is written by hand and can. If you change the English README in a way
+that changes what it claims, change the Korean one in the same pull request —
+or say in the PR that you could not, so someone else can.
+
+Translations of the deeper docs (`docs/`, `bench/`) do not exist yet. They are
+worth adding when someone needs them, not before.

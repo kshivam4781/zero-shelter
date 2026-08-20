@@ -1,0 +1,211 @@
+# zero-shelter
+
+[English](./README.md) · [한국어](./README.ko.md)
+
+의존성 스캐너의 출력을 **지금 고칠 것 몇 개**로 줄여 주는 도구입니다. 나머지는
+더 이상 말하지 않습니다.
+
+로컬에서 돕니다. 실행 중 LLM 없음, 자체 네트워크 호출 없음, 텔레메트리 없음.
+
+> **상태: 초기.** 파이프라인은 처음부터 끝까지 동작하고 Linux·macOS·Windows에서
+> 테스트 97개로 덮여 있습니다. npm에는 아직 배포하지 않았습니다.
+
+## 문제
+
+실제 프로젝트에 스캐너를 돌리면 경고가 수백 개 나옵니다. 오늘 손댈 가치가 있는
+건 다섯 개쯤입니다. 그 다섯 개를 찾는 데 드는 주의력이 고치는 것보다 커서, 얼마
+지나면 아무도 리포트를 열지 않습니다.
+
+찾아 주는 도구는 부족하지 않습니다. 없는 건 **그중 무엇이 지금 중요한지 정하는
+부분**입니다.
+
+## 무엇을 하는가
+
+```console
+$ npx zero-shelter judge
+  osv-scanner skipped: not on PATH (optional — install it for cross-source deduplication)
+
+fix these 5 now
+
+  critical  minimist   GHSA-XVCH-5GV4-984H  → —  125
+  critical  lodash     GHSA-JF85-CPCP-J695  → —  125
+  high      minimatch  GHSA-3PPC-4F35-3M26  → —  100
+  high      minimatch  GHSA-7R86-CG39-JMMJ  → —  100
+  high      lodash     GHSA-35JH-R3H4-6JHM  → —   95
+
+  13 reported → 13 after merge → 5 to fix  (62% less noise)
+  first run — record these as accepted with --update-baseline, then only new findings are reported
+```
+
+이미 있는 것들을 기록해 두면, 그다음부터는 **새로 생긴 것만** 듣게 됩니다.
+
+```console
+$ npx zero-shelter judge --update-baseline
+recorded 13 finding(s) as accepted in .zero-shelter/baseline.json
+
+$ npx zero-shelter judge
+✓ nothing new to fix
+  13 reported → 13 after merge → 0 to fix (100% less noise), 13 already accepted
+```
+
+새 항목이 있으면 종료 코드가 `1`입니다. CI가 물려받은 백로그가 아니라 **이번
+변경이 들여온 회귀**에서 실패합니다.
+
+## 설치
+
+설치할 게 없습니다. `npx zero-shelter judge`로 실행됩니다.
+
+`npm audit`은 항상 돕니다 — lockfile이 있는 프로젝트엔 npm이 이미 있으니까요.
+`osv-scanner`는 `PATH`에 있으면 쓰고 없으면 조용히 건너뜁니다. 출력을 보기 전에
+뭘 설치하라는 말을 듣는 일은 없습니다. 다만 설치해 두는 편이 낫습니다 — 두 소스를
+맞대는 게 중복 제거의 대부분이 나오는 지점입니다.
+
+pnpm과 npm 6 리포트 형식도 읽습니다.
+
+## CI에서
+
+```yaml
+- run: npx zero-shelter judge --format sarif --output zero-shelter.sarif
+  continue-on-error: true
+
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: zero-shelter.sarif
+```
+
+결과가 Security 탭에 올라가고 PR에 주석으로 붙습니다. 지문이 기기와 실행에 걸쳐
+안정적이라, GitHub이 이미 본 알림을 매 빌드마다 다시 여는 대신 알아봅니다.
+
+여기엔 짚어 둘 만한 아이러니가 있습니다. 이 프로젝트는 **서로 다른 도구의 SARIF를
+그걸 받는 도구들이 맞대지 못하기 때문에** 존재합니다. 그런 우리가 SARIF를 내보내는
+건 모순이 아닙니다 — 하류가 받는 것은 맞대는 데 실패할 원시 실행 네 개가 아니라
+**이미 판정이 끝난 하나**입니다.
+
+## 코딩 에이전트에서
+
+코딩 에이전트는 매 세션을 이 프로젝트가 뭐가 깨져 있는지 모르는 채로 시작합니다.
+그래서 이미 미해결 advisory가 있는 의존성을 아무렇지 않게 추가합니다.
+`zero-shelter hook`은 사람이 받는 그 짧은 목록을 에이전트에게 넘깁니다.
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "npx zero-shelter hook" }] }
+    ]
+  }
+}
+```
+
+프롬프트를 막지 않고, 실패하지도 않습니다 — 어떤 오류에서도 조용히 exit 0입니다.
+요청하지도 않은 보안 리포트 때문에 남의 작업 세션이 끊기는 건 아무 말도 안 하는
+것보다 나쁩니다. [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md)를 보세요.
+
+## 옵션
+
+```
+--input <file>        스캐너를 돌리는 대신 저장된 출력을 읽음 (반복 가능)
+--format <fmt>        text (기본) | json | sarif
+--output <file>       stdout 대신 파일로 씀
+--explain             각 점수가 어떻게 나왔는지 보여줌
+--top <n>             최대 n개만 보고
+--update-baseline     현재 항목들을 수용으로 기록
+--baseline <file>     baseline 위치 (기본 .zero-shelter/baseline.json)
+--cwd <dir>           프로젝트 디렉터리
+```
+
+`--explain`은 부여된 점수와 그 근거가 된 가중치 표를 전부 출력합니다. 랭킹을
+**믿는 대신 따질 수 있게** 하려는 것입니다.
+
+## 바뀌지 않는 설계 원칙
+
+이건 안 바뀝니다. 하나라도 깨는 패치는 그 이유만으로 반려됩니다.
+
+| 원칙 | 이유 |
+|---|---|
+| 실행 중 LLM 없음 | 같은 입력은 모든 기계에서 같은 출력이어야 합니다. 그리고 당신의 코드는 당신의 기계에 남습니다. |
+| 자체 네트워크 호출 없음 | 결과는 오프라인에서 재현 가능해야 합니다. 우리가 실행하는 스캐너는 그쪽 사정이고, 우리가 하는 것보다 크게 말하지 않고 그대로 적습니다. |
+| 점수 계산은 정수만 | 부동소수점은 플랫폼마다 다르게 반올림합니다. 호스트에 따라 랭킹이 흔들리면 우리가 공개하는 모든 수치가 그걸 만든 기계에서만 참이 됩니다. |
+| 시크릿은 파싱 시점에 해시, 원본은 폐기 | 찾은 것을 흘리는 보안 도구는 존재할 이유가 없습니다. |
+| 지문 대상은 전부 `src/normalize.ts`를 지남 | 정규화 경로가 둘이면 한 항목에 정체성이 둘이 됩니다. |
+
+CI가 Ubuntu·macOS·Windows에서 테스트를 돌리며 고정된 해시값을 확인합니다. 호스트에
+따라 달라지는 지문은 조용히 우리 수치를 기계 종속으로 만드는 대신 빌드를 깨뜨립니다.
+
+## 병합을 멈추는 지점
+
+두 스캐너가 같은 취약점이라고 합의하는 건 식별자를 공유할 때뿐입니다. `npm audit`은
+어떤 advisory는 GitHub에, 다른 건 NVD에 연결해서, 같은 취약점인데도 별칭 집합이
+겹치지 않을 수 있습니다.
+
+우리는 **식별자를 공유하는 것만 잇고 나머지는 추측하지 않고 표시만 합니다.**
+중복을 보여주는 것과 취약점을 숨기는 것 사이에서, 중복이 더 싼 실수입니다.
+
+이건 v1의 답이지 영구적인 답이 아닙니다 —
+[Discussion #25](https://github.com/zero-shelter/zero-shelter/discussions/25)에
+트레이드오프를 열어 두었고, 더 나은 아이디어를 환영합니다.
+
+## 우리가 측정한 것에 대한 정직함
+
+커밋으로 고정한 외부 프로젝트 4곳, 스캐너 출력은 `bench/captures/`에 동결해서
+누구든 오프라인으로 표를 재현할 수 있습니다.
+
+| 저장소 | 원시 보고 | 판정 후 | 감소 |
+|---|---|---|---|
+| juice-shop | 155 | 82 | 47% |
+| NodeGoat | 360 | 173 | 52% |
+| dvna | 106 | 51 | 52% |
+| hackathon-starter | 24 | 11 | 54% |
+
+`npm run build && node bench/evaluate.mjs`로 재현됩니다. 네트워크도, 스캐너도
+필요 없습니다.
+
+**이건 부피이지 정밀도가 아닙니다.** 두 소스가 같은 advisory를 절반쯤 겹쳐 말하고
+우리가 그걸 맞댄다는 뜻입니다. 남은 것들이 "맞는" 것들이라는 뜻은 아닙니다 — 그건
+정답 라벨이 필요하고 아직 없습니다. 라벨이 생기기 전까지 정직한 주장은 *적게
+보여준다*까지이고, *맞게 보여준다*가 아닙니다.
+
+라벨링은 두 사람이 서로의 답을 보지 않고 독립적으로 하며 일치도를 함께 공개합니다.
+모델이 하지 않습니다 — 자기 도구가 동작한다는 걸 자기가 만든 정답으로 증명하는 건
+순환이고, 남이 그렇게 했다면 우리도 안 믿을 겁니다. 프로토콜과 우리가 아는 한계는
+[bench/README.md](./bench/README.md)에 있습니다. 랭킹 코드가 라벨보다 먼저
+존재한다는 것도 거기 적혀 있습니다.
+
+## 문서
+
+- [아키텍처](./docs/architecture.md) — 레이어, 시퀀스 다이어그램, 어디에 추가하나
+- [v1 범위](./docs/v1-scope.md) — 무엇이 들어가고 무엇이 미뤄졌으며 왜인가
+- [에이전트 훅](./docs/AGENT-HOOK.md) — 설정과, 의도적으로 하지 않는 것
+- [벤치마크](./bench/README.md) — 고정 대상, 동결 캡처, 라벨링 프로토콜
+- [서드파티 구성요소](./THIRD_PARTY.ko.md)
+
+영어가 정본입니다. 번역이 뒤처져 있다면 그건 신고할 만한 버그입니다.
+
+## 개발
+
+```bash
+npm ci
+npm test
+npm run typecheck
+npm run third-party   # THIRD_PARTY.md·THIRD_PARTY.ko.md 재생성
+```
+
+Node 20 이상.
+
+## 기여
+
+기여를 환영합니다. 설계에 대한 반대도 포함해서요.
+
+리뷰 규칙 하나는 미리 밝혀 둘 만큼 특이합니다.
+
+> **변경을 깨뜨리는 입력을 말하지 못하는 리뷰어는 승인하지 않습니다.**
+
+코멘트 개수가 아닙니다. 에이전트는 3분에 400줄을 쓸 수 있고, 사람은 거기 맞추려고
+400줄을 3분에 승인합니다. 그 지점에서 코드와 테스트가 같은 오해를 공유하게 되고
+아무도 알아채지 못합니다.
+
+[CONTRIBUTING.md](./CONTRIBUTING.md)를 보세요.
+
+## 라이선스
+
+[Apache-2.0](./LICENSE)

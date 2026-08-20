@@ -45,5 +45,5 @@ jobs:
       # keeps it from drifting away from package.json between releases.
       - run: npm run third-party
 
-      - name: Fail if THIRD_PARTY.md is stale
-        run: git diff --exit-code THIRD_PARTY.md
+      - name: Fail if either THIRD_PARTY file is stale
+        run: git diff --exit-code THIRD_PARTY.md THIRD_PARTY.ko.md
