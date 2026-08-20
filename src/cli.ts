@@ -13,6 +13,7 @@ import { judge } from "./judge.js";
 import { parseNpmAudit } from "./ingest/npm-audit.js";
 import { parseOsv } from "./ingest/osv.js";
 import { collect } from "./scan.js";
+import { cwdFromPayload, hookContext, hookOutput, readStdin } from "./hook.js";
 import { colorEnabled, renderExplain, renderHuman, renderJson } from "./report.js";
 import { renderSarif } from "./sarif.js";
 import type { ScaFinding } from "./finding.js";
@@ -35,6 +36,12 @@ const USAGE = `zero-shelter judge — decide which dependency findings to fix no
 
 Exit code is 1 when there is anything new to fix, so CI fails on regressions
 rather than on the backlog it inherited.
+
+  npx zero-shelter hook
+
+  Prints the current findings as agent context, for editors that support a
+  prompt hook. Never blocks a prompt and never fails: on any error it stays
+  quiet and exits 0. See docs/AGENT-HOOK.md.
 `;
 
 export async function main(argv: readonly string[]): Promise<number> {
@@ -69,6 +76,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
 
   const command = positionals[0] ?? "judge";
+  if (command === "hook") return await hook(values.cwd);
   if (command !== "judge") {
     process.stderr.write(`unknown command: ${command}\n\n${USAGE}`);
     return 2;
@@ -208,6 +216,29 @@ async function readInput(path: string): Promise<ScaFinding[]> {
   throw new Error(
     `${path}: unrecognised report. Expected npm audit (vulnerabilities) or osv-scanner (results).`,
   );
+}
+
+/**
+ * `zero-shelter hook` — hand the current judgement to a coding agent.
+ *
+ * Wrapped in a catch-everything because this runs inside someone's editor
+ * session: see the note in hook.ts. Exit code is always 0.
+ */
+async function hook(cwdFlag: string | undefined): Promise<number> {
+  try {
+    const cwd = resolve(
+      cwdFlag ?? cwdFromPayload(await readStdin(process.stdin), process.cwd()),
+    );
+    const { findings, skipped } = await collect({ cwd });
+    const { baseline, exists } = await loadBaseline(resolve(cwd, BASELINE_PATH));
+    const context = hookContext(
+      judge(findings, { baseline, baselineExists: exists, skipped }),
+    );
+    if (context !== undefined) process.stdout.write(hookOutput(context));
+  } catch {
+    // Deliberately silent — see hook.ts.
+  }
+  return 0;
 }
 
 async function loadBaseline(path: string) {
