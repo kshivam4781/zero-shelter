@@ -1,0 +1,84 @@
+/**
+ * Put the project's current judgement into a coding agent's context, before it
+ * writes any code.
+ *
+ * The agent otherwise starts every session blind: it will happily add a
+ * dependency this project already has an unfixed advisory for. This hands it
+ * the same short list a human gets from `judge`.
+ *
+ * Two things this deliberately does NOT do:
+ *
+ * - It never blocks the prompt. A dependency judge has no business deciding
+ *   what someone is allowed to ask, and the platforms cannot rewrite a prompt
+ *   anyway — `UserPromptSubmit` only adds context alongside it.
+ * - It never fails. A hook that errors interrupts the developer's session over
+ *   a security report they did not ask for, which is a worse outcome than
+ *   staying quiet. Every failure path here ends in "say nothing, exit 0".
+ */
+
+import type { JudgeResult } from "./report.js";
+
+/** How many findings an agent can act on without the context becoming noise. */
+const LIMIT = 5;
+
+/**
+ * The text handed to the agent, or undefined when there is nothing worth
+ * interrupting it with.
+ */
+export function hookContext(result: JudgeResult): string | undefined {
+  const findings = result.fixNow.slice(0, LIMIT);
+  if (findings.length === 0) return undefined;
+
+  const lines = findings.map((entry) => {
+    const { severity, packageName, advisoryId, fixedIn } = entry.finding;
+    const fix = fixedIn === undefined ? "no fix published" : `fixed in ${fixedIn}`;
+    return `- ${severity} ${packageName} (${advisoryId}, ${fix})`;
+  });
+
+  const more =
+    result.fixNow.length > LIMIT ? ` (${result.fixNow.length - LIMIT} more not shown)` : "";
+
+  return [
+    `zero-shelter: this project has ${result.fixNow.length} unaddressed dependency ` +
+      `finding(s)${more}. Highest priority first:`,
+    ...lines,
+    "Do not introduce versions that reintroduce these. Run `npx zero-shelter judge --explain` for the reasoning behind the order.",
+  ].join("\n");
+}
+
+/** The shape agents read back. Only the fields we actually emit. */
+export function hookOutput(context: string): string {
+  return `${JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: "UserPromptSubmit",
+      additionalContext: context,
+    },
+  })}\n`;
+}
+
+/**
+ * The working directory to judge.
+ *
+ * Claude Code sends the session's cwd in the payload, which is more accurate
+ * than ours — the hook process is not necessarily started in the project the
+ * agent is editing. Anything unparseable falls back rather than failing.
+ */
+export function cwdFromPayload(raw: string, fallback: string): string {
+  try {
+    const payload: unknown = JSON.parse(raw);
+    if (typeof payload === "object" && payload !== null && "cwd" in payload) {
+      const { cwd } = payload as { cwd?: unknown };
+      if (typeof cwd === "string" && cwd !== "") return cwd;
+    }
+  } catch {
+    // ponytail: a malformed payload is not worth diagnosing here — judging the
+    // process cwd is still useful, and the alternative is breaking the session.
+  }
+  return fallback;
+}
+
+export async function readStdin(stream: AsyncIterable<Buffer | string>): Promise<string> {
+  const chunks: string[] = [];
+  for await (const chunk of stream) chunks.push(String(chunk));
+  return chunks.join("");
+}
