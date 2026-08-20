@@ -7,8 +7,9 @@ now — and stops telling you about the rest.
 
 Local-first. No LLM at runtime, no network calls of its own, no telemetry.
 
-> **Status: early.** The pipeline runs end to end and is covered by 97 tests on
-> Linux, macOS and Windows. Nothing is published to npm yet.
+> **Status: early.** [`zero-shelter@0.0.1`](https://www.npmjs.com/package/zero-shelter)
+> is a preview release — the pipeline runs end to end and is covered by 97 tests
+> on Linux, macOS and Windows. The interface may still change before 0.1.0.
 
 ## The problem
 
