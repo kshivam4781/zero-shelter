@@ -37,6 +37,17 @@ Issue → feature/security spec → focused branch → PR → QA evidence → re
 
 The Issue is the public problem statement, the spec is the behavior contract, and the PR is the implementation plus evidence.
 
+## Workflow metadata
+
+GitHub labels and assignees describe the current workflow without copying mutable state into specs:
+
+- exactly one `status:*` label: `proposed`, `accepted`, `in-progress`, `blocked`, or `ready-for-review`;
+- one or more `type:*` and `area:*` labels for discovery and triage;
+- the Issue/PR assignee is the current human Owner;
+- open/closed/merged is the completion state, so no redundant `status: done` label is used.
+
+Maintainers own label hygiene. When a status changes, remove the old lifecycle label before applying the new one.
+
 ## Merge policy
 
 A Maintainer merges only when the scope and affected layer are clear, required CI passes, QA evidence covers relevant failure modes, security/privacy impact is addressed, documentation is updated, and no unresolved review or ownership conflict remains.

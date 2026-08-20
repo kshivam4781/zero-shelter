@@ -3,6 +3,8 @@ description: Propose a focused feature or integration
 title: "[Feature]: "
 labels:
   - enhancement
+  - type: feature
+  - status: proposed
 body:
   - type: markdown
     attributes:

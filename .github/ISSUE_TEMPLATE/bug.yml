@@ -3,6 +3,8 @@ description: Report a reproducible defect
 title: "[Bug]: "
 labels:
   - bug
+  - type: bug
+  - status: proposed
 body:
   - type: textarea
     id: reproduction

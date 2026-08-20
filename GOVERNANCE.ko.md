@@ -37,6 +37,17 @@ Issue → 기능/보안 명세 → 집중 branch → PR → QA 근거 → 리뷰
 
 Issue는 문제 정의, 명세는 동작 계약, PR은 구현과 근거입니다.
 
+## Workflow metadata
+
+변경되는 상태를 spec에 중복 기록하지 않고 GitHub label과 Assignee를 정본으로 사용합니다.
+
+- `status:*`는 `proposed`, `accepted`, `in-progress`, `blocked`, `ready-for-review` 중 하나만 유지
+- `type:*`와 `area:*`는 검색과 triage를 위한 분류
+- Issue/PR Assignee는 현재 사람 Owner
+- 완료는 open/closed/merged로 확인하고 `status: done`은 사용하지 않음
+
+Label 정리는 Maintainer의 책임입니다. 상태를 변경할 때 기존 lifecycle label을 먼저 제거합니다.
+
 ## Merge 정책
 
 Maintainer는 범위·영향 layer·CI·QA·보안/개인정보·문서·충돌 상태가 확인된 경우에만 merge합니다. 리뷰어는 깨지는 입력을 설명하거나 시도한 범위와 깨지지 않은 이유를 설명할 수 있어야 합니다.

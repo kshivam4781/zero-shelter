@@ -4,6 +4,12 @@
 
 Closes #
 
+## GitHub metadata
+
+- [ ] 연결된 Issue에 `status:*` label이 정확히 하나 있음
+- [ ] `type:*`와 관련 `area:*` label이 적용됨
+- [ ] Issue 또는 PR에 사람 Owner가 지정됨
+
 ## 범위
 
 - 포함:

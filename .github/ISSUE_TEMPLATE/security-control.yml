@@ -3,6 +3,8 @@ description: Propose a privacy, security, secret-handling, or policy control
 title: "[Security]: "
 labels:
   - security
+  - type: security-control
+  - status: proposed
 body:
   - type: markdown
     attributes:

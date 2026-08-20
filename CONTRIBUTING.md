@@ -39,6 +39,20 @@ Before implementation:
 
 Small documentation or test fixes may use the PR template directly. Features and security controls need a spec.
 
+## Labels and assignees
+
+GitHub metadata is the source of truth for workflow state:
+
+| Metadata | Rule |
+|---|---|
+| `status:*` | Keep exactly one lifecycle label: `proposed`, `accepted`, `in-progress`, `blocked`, or `ready-for-review`. |
+| `type:*` | Classify the change: `feature`, `bug`, `security-control`, `docs`, or `benchmark`. |
+| `area:*` | Identify the affected area such as `ingest`, `judgment`, `agent`, `package`, or `docs`. |
+| Assignee | Identify the current human Owner of the Issue or PR. |
+| GitHub state | Use open/closed/merged for completion; do not add a redundant `status: done`. |
+
+Contributors should mention the expected labels and assignee in the Issue. Maintainers apply or correct them when triaging. A status transition should remove the previous `status:*` label before adding the next one.
+
 ## Change types
 
 | Type | Examples | Required evidence |

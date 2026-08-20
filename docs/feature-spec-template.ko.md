@@ -1,9 +1,9 @@
 # 기능 명세: <기능명>
 
-## 상태와 담당
+## Issue와 lifecycle metadata
 
-- 상태: 제안 | 작업 중 | 리뷰 준비 | 반영
-- 담당자:
+상태는 GitHub label로, 담당자는 Issue/PR Assignee로 관리합니다. 문서 안에 변경될 수 있는 상태를 중복 기록하지 않습니다.
+
 - Issue:
 - 대상 layer:
 - 관련 PR:

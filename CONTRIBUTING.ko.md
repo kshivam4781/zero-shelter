@@ -37,6 +37,20 @@ Node.js 20 이상이 필요하며 database·service·API key·실행 중 LLM은 
 
 작은 문서·테스트 수정은 PR 템플릿만 사용해도 되지만, 기능과 보안 제어 변경은 명세가 필요합니다.
 
+## Label과 Assignee
+
+GitHub metadata를 workflow 상태의 정본으로 사용합니다.
+
+| Metadata | 규칙 |
+|---|---|
+| `status:*` | `proposed`, `accepted`, `in-progress`, `blocked`, `ready-for-review` 중 하나만 유지 |
+| `type:*` | `feature`, `bug`, `security-control`, `docs`, `benchmark` 중 하나로 분류 |
+| `area:*` | `ingest`, `judgment`, `agent`, `package`, `docs` 등 영향 영역 표시 |
+| Assignee | Issue/PR의 현재 사람 Owner 표시 |
+| GitHub state | 완료는 open/closed/merged로 확인하며 `status: done`은 만들지 않음 |
+
+기여자는 Issue에서 예상 label과 담당자를 제안하고, triage 시 Maintainer가 적용·수정합니다. 상태를 바꿀 때는 이전 `status:*` label을 제거한 뒤 새 label을 추가합니다.
+
 ## 변경 유형
 
 | 유형 | 예시 | 필수 근거 |

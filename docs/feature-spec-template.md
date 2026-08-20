@@ -1,9 +1,9 @@
 # Feature specification: <name>
 
-## Status and ownership
+## Issue and lifecycle metadata
 
-- Status: proposed | in progress | ready for review | accepted
-- Owner:
+Lifecycle status is managed by GitHub labels and ownership by the Issue/PR assignee. Do not duplicate a mutable status in this document.
+
 - Issue:
 - Target layer:
 - Related PR:

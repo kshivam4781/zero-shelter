@@ -4,6 +4,12 @@
 
 Closes #
 
+## GitHub metadata
+
+- [ ] Linked Issue has exactly one `status:*` label
+- [ ] `type:*` and relevant `area:*` labels are applied
+- [ ] An Owner is assigned to the Issue or PR
+
 ## Scope
 
 - What is included:
