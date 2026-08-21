@@ -47,3 +47,31 @@ jobs:
 
       - name: Fail if either THIRD_PARTY file is stale
         run: git diff --exit-code THIRD_PARTY.md THIRD_PARTY.ko.md
+
+  # The tool, run on this repository, by this repository. A security tool that
+  # its own CI does not run is a claim rather than a product — and this job is
+  # the only place the whole path (scanner subprocess, ingest, judgement,
+  # SARIF, exit code) executes as a user would run it. The unit tests drive
+  # everything from fixtures on purpose, so they cannot catch a break here.
+  self:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # No runtime dependencies, so a finding here means a devDependency needs
+      # attention. Exit 1 is a real failure: we have nothing recorded as
+      # accepted, and adding a baseline to silence our own tool would be the
+      # exact behaviour this project exists to argue against.
+      - run: node dist/bin.js judge
+
+      - name: Also produce the SARIF a user would upload
+        if: always()
+        run: node dist/bin.js judge --format sarif --output zero-shelter.sarif
+
+      - name: Fail if the SARIF is not valid JSON with a run in it
+        if: always()
+        run: node -e "const r=require('./zero-shelter.sarif');if(r.version!=='2.1.0'||!Array.isArray(r.runs)||r.runs.length!==1)throw new Error('malformed SARIF');console.log('SARIF ok:',r.runs[0].results.length,'result(s)')"

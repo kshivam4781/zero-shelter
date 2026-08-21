@@ -226,6 +226,16 @@ Korean: [README.ko.md](./README.ko.md), [THIRD_PARTY.ko.md](./THIRD_PARTY.ko.md)
 English is the canonical version; a translation that lags is a bug worth
 reporting.
 
+## We run it on ourselves
+
+CI runs `zero-shelter judge` on this repository and fails the build on a
+finding. The first time that job ran it reported six, including a critical in
+our test runner, and the fix was the line the tool printed:
+`npm i vitest@4.1.11`. One upgrade cleared all six.
+
+Nothing is recorded in a baseline here. Silencing our own tool to keep our own
+build green is the behaviour this project exists to argue against.
+
 ## Development
 
 ```bash
