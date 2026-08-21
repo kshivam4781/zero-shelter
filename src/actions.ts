@@ -7,6 +7,7 @@
  */
 
 import type { RankedFinding } from "./triage.js";
+import { isHigher } from "./version-order.js";
 
 export interface TransitiveFix {
   readonly packageName: string;
@@ -90,39 +91,4 @@ export function transitiveFixes(findings: readonly RankedFinding[]): TransitiveF
       clears,
     }))
     .sort((a, b) => b.clears - a.clears || (a.packageName < b.packageName ? -1 : 1));
-}
-
-/**
- * Numeric-segment comparison, so 4.18.1 beats 4.17.21 — string order gets that
- * backwards, which would send someone to an older version than the one they
- * need.
- *
- * ponytail: not a semver implementation. It compares the release numbers and
- * treats a prerelease as below the release it precedes, which is the whole
- * question when picking the highest published fix. Reach for a real semver
- * parser if ranges ever need solving here.
- */
-function isHigher(candidate: string, current: string): boolean {
-  const a = segments(candidate);
-  const b = segments(current);
-
-  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
-    const left = a[i] ?? 0;
-    const right = b[i] ?? 0;
-    if (left !== right) return left > right;
-  }
-
-  // Same release numbers: 2.0.0 outranks 2.0.0-rc.1.
-  return isPrerelease(current) && !isPrerelease(candidate);
-}
-
-function segments(version: string): number[] {
-  return (version.split(/[-+]/)[0] ?? "")
-    .split(".")
-    .map((part) => Number.parseInt(part, 10))
-    .filter((part) => Number.isInteger(part));
-}
-
-function isPrerelease(version: string): boolean {
-  return /-/.test(version);
 }

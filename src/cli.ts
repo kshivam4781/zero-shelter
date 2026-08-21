@@ -12,7 +12,7 @@ import {
 import { judge } from "./judge.js";
 import { parseNpmAudit } from "./ingest/npm-audit.js";
 import { parseOsv } from "./ingest/osv.js";
-import { collect } from "./scan.js";
+import { collect, isWorkspaceRoot } from "./scan.js";
 import { cwdFromPayload, hookContext, hookOutput, readStdin } from "./hook.js";
 import { colorEnabled, renderExplain, renderHuman, renderJson } from "./report.js";
 import { renderSarif } from "./sarif.js";
@@ -160,6 +160,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     baseline,
     baselineExists,
     skipped,
+    workspaceRoot: isWorkspaceRoot(cwd),
     ...(sources === undefined ? {} : { sources }),
     ...(top === undefined ? {} : { top }),
   });

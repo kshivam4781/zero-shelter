@@ -111,15 +111,26 @@ describe("mergeFindings", () => {
   });
 
   /**
-   * Naming one of two disagreeing fixes would tell the reader to install a
-   * version that does not fix the branch they are on.
+   * This used to withhold the fix entirely, on the reasoning that naming one
+   * of two disagreeing versions could point at a release that does not fix the
+   * branch someone is on. The effect was worse than the risk: npm audit and
+   * osv-scanner routinely name different versions for the same advisory, so
+   * installing the second scanner — the one we tell everyone to install —
+   * deleted every upgrade command from the report.
+   *
+   * The highest of the claimed versions satisfies all of them, so that is what
+   * it reports, and it keeps the full list for --explain to show.
    */
-  it("withholds fixedIn when sources disagree", () => {
+  it("takes the fix that satisfies every source when they disagree", () => {
     const conflicting: ScaFinding[] = [
       base({ fixedIn: "1.0.0", sources: [{ tool: "a", ruleId: "CVE-2024-1" }] }),
       base({ fixedIn: "2.0.0", sources: [{ tool: "b", ruleId: "CVE-2024-1" }] }),
     ];
-    expect(mergeFindings(conflicting)[0]?.fixedIn).toBeUndefined();
+
+    const merged = mergeFindings(conflicting)[0];
+
+    expect(merged?.fixedIn).toBe("2.0.0");
+    expect(merged?.fixVersionsClaimed).toEqual(["1.0.0", "2.0.0"]);
   });
 
   it("keeps both ranges when sources describe them differently", () => {

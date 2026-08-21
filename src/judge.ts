@@ -17,6 +17,8 @@ export interface JudgeOptions {
   readonly skipped?: readonly string[];
   /** Scanners that produced a readable report this run. */
   readonly sources?: readonly string[];
+  /** Changes what an install command means — see isWorkspaceRoot. */
+  readonly workspaceRoot?: boolean;
   readonly baselineExists?: boolean;
   /** Cap on how many findings the report asks anyone to act on at once. */
   readonly top?: number;
@@ -39,5 +41,6 @@ export function judge(
     fixNow: applied.fresh.slice(0, top),
     skipped: [...(options.skipped ?? [])],
     baselineExists: options.baselineExists ?? true,
+    workspaceRoot: options.workspaceRoot ?? false,
   };
 }
