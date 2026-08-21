@@ -27,6 +27,18 @@ The hook reads the session's `cwd` from the payload on stdin, so it judges the
 project being edited rather than wherever the hook process happened to start.
 `--cwd` overrides it.
 
+The context carries the commands too, not only the diagnosis:
+
+```
+- critical minimist (GHSA-XVCH-5GV4-984H, fixed in 1.2.8)
+Fixable now:
+$ npm i lodash@4.18.1   # clears 7
+```
+
+An agent told only what is broken invents a way to fix it, and the invented way
+is usually `npm i something@latest` on a package that arrives through another
+dependency — which adds a top-level entry and leaves the vulnerable copy alone.
+
 ## What it will not do
 
 **It does not block prompts.** A dependency judge has no business deciding what
