@@ -104,6 +104,22 @@ It never blocks a prompt and never fails — on any error it stays quiet and exi
 0, because interrupting someone's session over a report they did not ask for is
 worse than saying nothing. See [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md).
 
+## As a Claude Code plugin
+
+```
+/plugin marketplace add zero-shelter/zero-shelter
+/plugin install zero-shelter@zero-shelter
+```
+
+Two skills. `/zero-shelter:setup` runs the first scan and offers the CI and hook
+wiring; `/zero-shelter:explain` reads a run and says what to fix first and why.
+
+Both are presentation only. The skills are told not to re-rank, filter or add
+findings, and to quote `--explain` rather than reason about severity themselves:
+the judgement stays in the CLI, where the same input produces the same answer
+and you can check it. A model that reorders the list on the way to your screen
+would take that away.
+
 ## Options
 
 ```
