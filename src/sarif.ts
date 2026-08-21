@@ -14,6 +14,7 @@
 
 import type { JudgeResult } from "./report.js";
 import type { RankedFinding } from "./triage.js";
+import { upgradeActions } from "./actions.js";
 
 const TOOL_URI = "https://github.com/zero-shelter/zero-shelter";
 
@@ -96,6 +97,10 @@ function toRule(entry: RankedFinding) {
 
 function toResult(entry: RankedFinding, index: number) {
   const { finding } = entry;
+  // Carried into the alert text on purpose. Someone reading this in a Security
+  // tab is one click from a page of prose about the advisory and nowhere near
+  // the one line that resolves it.
+  const remedy = remedyFor(entry);
 
   return {
     ruleId: finding.advisoryId,
@@ -104,7 +109,8 @@ function toResult(entry: RankedFinding, index: number) {
     message: {
       text:
         `${finding.packageName} ${finding.vulnerableRange}: ${finding.title}` +
-        (finding.fixedIn === undefined ? "" : ` (fixed in ${finding.fixedIn})`),
+        (finding.fixedIn === undefined ? "" : ` (fixed in ${finding.fixedIn})`) +
+        (remedy === undefined ? "" : ` — ${remedy}`),
     },
     locations: [
       {
@@ -126,8 +132,32 @@ function toResult(entry: RankedFinding, index: number) {
       tools: finding.tools,
       aliases: finding.aliases,
       possibleDuplicates: finding.relatedTo,
+      ...(remedy === undefined ? {} : { remedy }),
     },
   };
+}
+
+/**
+ * What to do about one finding, in a sentence.
+ *
+ * Not emitted as a SARIF `fixes` entry: that requires an artifactChange with
+ * the exact replacement text, and we would be guessing at how the version is
+ * written in a manifest we have not parsed. A wrong patch offered as a fix is
+ * worse than a sentence that is right.
+ */
+function remedyFor(entry: RankedFinding): string | undefined {
+  const { finding } = entry;
+  if (finding.fixedIn === undefined) return undefined;
+
+  if (finding.transitive) {
+    return (
+      `arrives through another dependency; ` +
+      `package.json "overrides": { "${finding.packageName}": "${finding.fixedIn}" } ` +
+      "forces it, at the risk of breaking whatever pinned it"
+    );
+  }
+
+  return upgradeActions([entry])[0]?.command;
 }
 
 /**
