@@ -78,3 +78,34 @@ describe("when nothing could be scanned", () => {
     expect(result.findings).toHaveLength(1);
   });
 });
+
+describe("a baseline that cannot be read", () => {
+  it("names the file rather than leaving the reader to guess", async () => {
+    const { mkdtemp, writeFile } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { main } = await import("../src/cli.js");
+
+    const dir = await mkdtemp(join(tmpdir(), "zs-baseline-"));
+    const path = join(dir, "truncated.json");
+    // Half a write, which is what an interrupted --update-baseline leaves.
+    await writeFile(path, '{"schemaVersion": "1", "accep');
+
+    const errors: string[] = [];
+    const write = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: string) => {
+      errors.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+
+    try {
+      const code = await main(["judge", "--input", "test/fixtures/npm-audit.json", "--baseline", path]);
+      expect(code).toBe(2);
+    } finally {
+      process.stderr.write = write;
+    }
+
+    expect(errors.join("")).toContain(path);
+    expect(errors.join("")).toContain("not valid JSON");
+  });
+});
