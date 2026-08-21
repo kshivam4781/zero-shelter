@@ -62,6 +62,31 @@ jobs:
 
       - run: npm run build
 
+      # Cross-source reconciliation is the claim this project is built on, and
+      # until now our own CI ran a single source — so the path that does the
+      # reconciling was never exercised outside fixtures. Pinned by version and
+      # verified by checksum: a security tool that curls an unverified binary
+      # into its own pipeline has no standing to lecture anyone about supply
+      # chains.
+      - name: Install osv-scanner (pinned, checksum-verified)
+        run: |
+          curl -sSfL -o osv-scanner \
+            https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_amd64
+          echo "edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c  osv-scanner" | sha256sum -c -
+          chmod +x osv-scanner
+          echo "$PWD" >> "$GITHUB_PATH"
+
+      - name: Both sources must have run
+        run: |
+          node dist/bin.js judge --json > judged.json || true
+          node -e "
+            const { readFileSync } = require('node:fs');
+            const skipped = JSON.parse(readFileSync('judged.json', 'utf8')).skipped;
+            const complaint = skipped.find((note) => note.startsWith('osv-scanner'));
+            if (complaint) throw new Error('osv-scanner did not contribute: ' + complaint);
+            console.log('npm audit and osv-scanner both reported');
+          "
+
       # No runtime dependencies, so a finding here means a devDependency needs
       # attention. Exit 1 is a real failure: we have nothing recorded as
       # accepted, and adding a baseline to silence our own tool would be the

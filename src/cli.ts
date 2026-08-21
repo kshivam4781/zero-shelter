@@ -285,6 +285,12 @@ async function loadBaseline(path: string) {
   try {
     return { baseline: parseBaseline(await readFile(path, "utf8")), exists: true };
   } catch (error) {
+    // JSON.parse says "Unexpected end of JSON input" and nothing about where.
+    // The reader is left guessing which file the tool even means — and an
+    // empty or truncated baseline is a normal outcome of an interrupted write.
+    if (error instanceof SyntaxError) {
+      throw new Error(`${path} is not valid JSON: ${error.message}`);
+    }
     // A missing baseline is the normal first run, not a failure. A malformed
     // one is a failure: silently treating it as empty would report the whole
     // backlog as new and look like a regression nobody caused.
