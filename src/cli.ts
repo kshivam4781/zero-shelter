@@ -111,6 +111,19 @@ export async function main(argv: readonly string[]): Promise<number> {
       const collected = await collect({ cwd });
       findings = collected.findings;
       skipped = collected.skipped;
+
+      // Nothing was scanned. Reporting "nothing new to fix" here would be a
+      // lie with a zero exit code attached, and in CI it turns a project the
+      // tool never looked at green — worse than crashing, because nobody
+      // investigates a passing build.
+      if (collected.contributed.length === 0) {
+        process.stderr.write(
+          `cannot judge ${cwd}: no scanner produced a report\n` +
+            collected.skipped.map((note) => `  ${note}\n`).join("") +
+            "nothing was scanned, so this is not a pass\n",
+        );
+        return 2;
+      }
     }
   } catch (error) {
     process.stderr.write(`${(error as Error).message}\n`);

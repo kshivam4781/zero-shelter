@@ -32,7 +32,7 @@ export function parseNpmAudit(raw: string): ScaFinding[] {
     throw new Error("npm audit output is not a JSON object");
   }
 
-  // pnpm audit, yarn v1 and npm 6 all emit the older `advisories` shape.
+  // pnpm audit and npm 6 emit the older `advisories` shape.
   // Rejecting it would turn "we support npm" into "we support npm 7+", which
   // is a much smaller promise than it needs to be.
   if (isRecord(report["advisories"])) {
@@ -58,7 +58,7 @@ export function parseNpmAudit(raw: string): ScaFinding[] {
 }
 
 /**
- * The `advisories` shape used by pnpm audit, yarn v1 and npm 6.
+ * The `advisories` shape used by pnpm audit and npm 6.
  *
  * Each entry is one advisory against one package, so there is no propagation to
  * unpick — and it carries `cves` and `github_advisory_id` explicitly, which
@@ -244,7 +244,7 @@ function readVulnerabilities(report: Record<string, unknown>): Record<string, un
   const vulnerabilities = report["vulnerabilities"];
   if (vulnerabilities === undefined) {
     throw new Error(
-      "npm audit output has neither `vulnerabilities` (npm 7+) nor `advisories` (pnpm, yarn v1, npm 6)",
+      "npm audit output has neither `vulnerabilities` (npm 7+) nor `advisories` (pnpm, npm 6)",
     );
   }
 
