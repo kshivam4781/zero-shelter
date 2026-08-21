@@ -8,7 +8,7 @@
  */
 
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import type { ScaFinding } from "./finding.js";
@@ -16,6 +16,28 @@ import { parseNpmAudit } from "./ingest/npm-audit.js";
 import { parseOsv } from "./ingest/osv.js";
 
 const run = promisify(execFile);
+
+/**
+ * Whether this directory is the root of a workspace.
+ *
+ * It changes what the upgrade commands mean: `npm i x@1` run here adds a root
+ * dependency, while the package that declares the vulnerable range keeps
+ * declaring it. Hoisting means the audit output cannot tell us which workspace
+ * that is — every path comes back as `node_modules/x` — so the report says the
+ * command needs a `-w` rather than guessing which one.
+ */
+export function isWorkspaceRoot(cwd: string): boolean {
+  if (existsSync(join(cwd, "pnpm-workspace.yaml"))) return true;
+
+  try {
+    const manifest: unknown = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8"));
+    if (typeof manifest !== "object" || manifest === null) return false;
+    const { workspaces } = manifest as { workspaces?: unknown };
+    return Array.isArray(workspaces) ? workspaces.length > 0 : workspaces !== undefined;
+  } catch {
+    return false;
+  }
+}
 
 export interface Collected {
   readonly findings: ScaFinding[];

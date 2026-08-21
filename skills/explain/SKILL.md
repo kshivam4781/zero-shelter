@@ -46,6 +46,7 @@ Shape:
 | `tools` | Two entries means two scanners independently reported it |
 | `possibleDuplicates` | Suspected same-as, **not merged**. Deliberate: hiding a real vulnerability is worse than showing a duplicate |
 | `upgrades` | The commands. Already grouped and version-compared — use these instead of deriving your own from `fixedIn` |
+| `workspaceRoot` | `npm i` here lands in the root package. Say the command needs `-w <workspace>`; nothing can tell you which one, because npm hoists |
 | `transitiveFixes` | Has a fix, but arrives through another dependency. `npm i` does not fix these; `overrides` does, at the risk of breaking the parent |
 | `noLongerReported` | Accepted findings nothing reported this run |
 

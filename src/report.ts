@@ -15,6 +15,8 @@ export interface JudgeResult {
   readonly skipped: readonly string[];
   /** False on a first run, which changes what advice is worth giving. */
   readonly baselineExists: boolean;
+  /** Set when the install commands would land in the wrong package.json. */
+  readonly workspaceRoot?: boolean;
 }
 
 const COLOR = {
@@ -118,6 +120,16 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
     }
     if (actions.length > 3) {
       lines.push(paint(`  …and ${actions.length - 3} more package(s)`, COLOR.dim));
+    }
+
+    if (result.workspaceRoot === true) {
+      lines.push(
+        paint(
+          "    this is a workspace root — add -w <workspace> so the version lands in the " +
+            "package that declares it (hoisting hides which one from the scanners)",
+          COLOR.dim,
+        ),
+      );
     }
   }
 
@@ -252,6 +264,13 @@ export function renderExplain(result: JudgeResult): string {
 
     lines.push(`  ${"".padStart(5)}  range ${finding.vulnerableRange}`);
 
+    if (finding.fixVersionsClaimed !== undefined) {
+      lines.push(
+        `  ${"".padStart(5)}  sources named different fixes ` +
+          `(${finding.fixVersionsClaimed.join(", ")}); ${finding.fixedIn} satisfies all of them`,
+      );
+    }
+
     if (finding.aliases.length > 1) {
       lines.push(`  ${"".padStart(5)}  also known as ${finding.aliases.join(", ")}`);
     }
@@ -338,6 +357,7 @@ export function renderJson(result: JudgeResult): string {
       skipped: result.skipped,
       // The commands, so a caller does not have to re-derive them from the
       // findings and get the version comparison subtly wrong.
+      workspaceRoot: result.workspaceRoot === true,
       upgrades: upgradeActions(result.applied.fresh),
       transitiveFixes: transitiveFixes(result.applied.fresh),
       fixNow: result.fixNow.map((entry) => ({

@@ -146,6 +146,47 @@ await check("10. baseline silences, then the loop closes", "exit 0, then credit 
   return "recorded → quiet → fix acknowledged";
 });
 
+await check("a workspace root says the command needs -w", "caveat only in workspaces", async () => {
+  const root = join(workspace, "monorepo");
+  await run("mkdir", ["-p", join(root, "packages", "app")]);
+  await writeFile(
+    join(root, "package.json"),
+    `${JSON.stringify({ name: "root", private: true, workspaces: ["packages/*"] })}\n`,
+  );
+  await writeFile(
+    join(root, "packages", "app", "package.json"),
+    `${JSON.stringify({ name: "app", version: "1.0.0", dependencies: VULNERABLE })}\n`,
+  );
+  await run("npm", ["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts"], { cwd: root });
+
+  const { stdout } = await cli(root, ["judge"]);
+  expect(/npm i lodash@/.test(stdout), "no upgrade command in a workspace");
+  // Run at the root, that command adds a root dependency and leaves the
+  // workspace declaring the vulnerable range.
+  expect(/-w <workspace>/.test(stdout), "no workspace caveat next to the command");
+
+  const plain = await cli(project, ["judge"]);
+  expect(!/-w <workspace>/.test(plain.stdout), "workspace caveat leaked into an ordinary project");
+  return "caveat present in workspace, absent outside";
+});
+
+await check("both sources reconcile when osv-scanner is present", "cross-source path exercised", async () => {
+  const osv = process.env["OSV_SCANNER"] ?? "osv-scanner";
+  const available = await run(osv, ["--version"]).then(() => true, () => false);
+  if (!available) {
+    // Skipped rather than failed: this is the one check that needs a tool we
+    // do not ship. CI installs it (pinned and checksummed) so the path is
+    // covered there on every pull request.
+    return "skipped — osv-scanner not on PATH (CI covers it)";
+  }
+
+  const { stdout } = await cli(project, ["judge", "--json"]);
+  const parsed = JSON.parse(stdout);
+  const complaint = parsed.skipped.find((note) => note.startsWith("osv-scanner"));
+  expect(complaint === undefined, `osv-scanner did not contribute: ${complaint}`);
+  return "npm audit + osv-scanner";
+});
+
 await check("7. nothing but dist ships", "no runtime dependencies", async () => {
   const manifest = JSON.parse(
     (await run("node", ["-p", "JSON.stringify(require('zero-shelter/package.json'))"], { cwd: project })).stdout,
