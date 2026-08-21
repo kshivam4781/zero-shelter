@@ -129,7 +129,10 @@ pnpm과 npm 6 리포트 형식도 읽습니다.
 --update-baseline     현재 항목들을 수용으로 기록
 --baseline <file>     baseline 위치 (기본 .zero-shelter/baseline.json)
 --cwd <dir>           프로젝트 디렉터리
+--version             설치된 package version 출력
 ```
+
+`zero-shelter version`도 같은 version을 출력하는 명령입니다.
 
 `--explain`은 부여된 점수와 그 근거가 된 가중치 표를 전부 출력합니다. 랭킹을
 **믿는 대신 따질 수 있게** 하려는 것입니다.
