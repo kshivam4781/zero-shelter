@@ -115,7 +115,10 @@ worse than saying nothing. See [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md).
 --update-baseline     record current findings as accepted
 --baseline <file>     baseline location (default .zero-shelter/baseline.json)
 --cwd <dir>           project directory
+--version             print the installed package version
 ```
+
+`zero-shelter version` is an equivalent command for scripts and users who prefer subcommands.
 
 `--explain` prints every point awarded and the weights table it came from, so
 the ranking can be argued with rather than trusted.
