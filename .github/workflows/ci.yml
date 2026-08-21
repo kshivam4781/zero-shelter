@@ -72,6 +72,16 @@ jobs:
         if: always()
         run: node dist/bin.js judge --format sarif --output zero-shelter.sarif
 
+      # Parsed, not required: a .sarif extension makes require() treat the file
+      # as JavaScript, which fails on the first colon and says nothing useful
+      # about the SARIF.
       - name: Fail if the SARIF is not valid JSON with a run in it
         if: always()
-        run: node -e "const r=require('./zero-shelter.sarif');if(r.version!=='2.1.0'||!Array.isArray(r.runs)||r.runs.length!==1)throw new Error('malformed SARIF');console.log('SARIF ok:',r.runs[0].results.length,'result(s)')"
+        run: |
+          node -e "
+            const { readFileSync } = require('node:fs');
+            const r = JSON.parse(readFileSync('zero-shelter.sarif', 'utf8'));
+            if (r.version !== '2.1.0') throw new Error('version is ' + r.version);
+            if (!Array.isArray(r.runs) || r.runs.length !== 1) throw new Error('expected exactly one run');
+            console.log('SARIF ok:', r.runs[0].results.length, 'result(s)');
+          "
