@@ -17,6 +17,7 @@ import { cwdFromPayload, hookContext, hookOutput, readStdin } from "./hook.js";
 import { colorEnabled, renderExplain, renderHuman, renderJson } from "./report.js";
 import { renderSarif } from "./sarif.js";
 import type { ScaFinding } from "./finding.js";
+import { versionOutput } from "./version.js";
 
 const USAGE = `zero-shelter judge — decide which dependency findings to fix now
 
@@ -32,6 +33,7 @@ const USAGE = `zero-shelter judge — decide which dependency findings to fix no
   --update-baseline     record the current findings as accepted and exit 0
   --baseline <file>     baseline location (default ${BASELINE_PATH})
   --cwd <dir>           project directory (default .)
+  --version             print the installed package version
   --help
 
 Exit code is 1 when there is anything new to fix, so CI fails on regressions
@@ -60,6 +62,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         "update-baseline": { type: "boolean" },
         baseline: { type: "string" },
         cwd: { type: "string" },
+        version: { type: "boolean" },
         help: { type: "boolean", short: "h" },
       },
     });
@@ -72,6 +75,11 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   if (values.help === true || positionals[0] === "help") {
     process.stdout.write(USAGE);
+    return 0;
+  }
+
+  if (values.version === true || positionals[0] === "version") {
+    process.stdout.write(versionOutput());
     return 0;
   }
 
@@ -254,4 +262,3 @@ async function loadBaseline(path: string) {
     throw error;
   }
 }
-
