@@ -84,7 +84,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
 
   const command = positionals[0] ?? "judge";
-  if (command === "hook") return await hook(values.cwd);
+  if (command === "hook") return await hook(values.cwd, values.baseline);
   if (command !== "judge") {
     process.stderr.write(`unknown command: ${command}\n\n${USAGE}`);
     return 2;
@@ -257,13 +257,20 @@ async function readInput(path: string): Promise<ScaFinding[]> {
  * Wrapped in a catch-everything because this runs inside someone's editor
  * session: see the note in hook.ts. Exit code is always 0.
  */
-async function hook(cwdFlag: string | undefined): Promise<number> {
+async function hook(
+  cwdFlag: string | undefined,
+  baselineFlag: string | undefined,
+): Promise<number> {
   try {
     const cwd = resolve(
       cwdFlag ?? cwdFromPayload(await readStdin(process.stdin), process.cwd()),
     );
     const { findings, skipped } = await collect({ cwd });
-    const { baseline, exists } = await loadBaseline(resolve(cwd, BASELINE_PATH));
+    // A project that keeps its baseline somewhere else was being handed its
+    // whole backlog as if none of it had been accepted, every prompt.
+    const { baseline, exists } = await loadBaseline(
+      resolve(cwd, baselineFlag ?? BASELINE_PATH),
+    );
     const context = hookContext(
       judge(findings, { baseline, baselineExists: exists, skipped }),
     );

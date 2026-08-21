@@ -146,7 +146,8 @@ would take that away.
 --format <fmt>        text (default) | json | sarif
 --output <file>       write to a file instead of stdout
 --explain             show how each score was reached
---top <n>             report at most n findings
+--top <n>             print at most n rows (the counts and advice stay about
+                      the whole project)
 --update-baseline     record current findings as accepted
 --baseline <file>     baseline location (default .zero-shelter/baseline.json)
 --cwd <dir>           project directory

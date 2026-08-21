@@ -60,7 +60,15 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
     return lines.join("\n");
   }
 
-  lines.push(paint(`fix these ${fixNow.length} now`, COLOR.bold), "");
+  lines.push(
+    paint(
+      result.fixNow.length < result.applied.fresh.length
+        ? `fix these ${result.applied.fresh.length} now — top ${fixNow.length} shown`
+        : `fix these ${fixNow.length} now`,
+      COLOR.bold,
+    ),
+    "",
+  );
 
   const rows = fixNow.map((entry) => ({
     severity: entry.finding.severity,
@@ -92,7 +100,11 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
     );
   }
 
-  const actions = upgradeActions(fixNow);
+  // Everything below describes the project, not the page. --top decides how
+  // many rows are printed; letting it decide these too turns a display limit
+  // into a claim about the codebase.
+  const outstanding = result.applied.fresh;
+  const actions = upgradeActions(outstanding);
   if (actions.length > 0) {
     lines.push("");
     for (const action of actions.slice(0, 3)) {
@@ -109,7 +121,7 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
     }
   }
 
-  const indirect = transitiveFixes(fixNow);
+  const indirect = transitiveFixes(outstanding);
   if (indirect.length > 0) {
     const total = indirect.reduce((sum, entry) => sum + entry.clears, 0);
     if (actions.length === 0) lines.push("");
@@ -143,7 +155,7 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
     );
   }
 
-  const unjoined = fixNow.filter((entry) => entry.finding.relatedTo.length > 0);
+  const unjoined = outstanding.filter((entry) => entry.finding.relatedTo.length > 0);
   if (unjoined.length > 0) {
     lines.push(
       paint(
@@ -201,13 +213,18 @@ function summary(
   paint: (text: string, code: string) => string,
 ): string {
   const { raw, merged, applied, fixNow } = result;
-  const removed = raw - fixNow.length;
+  const outstanding = applied.fresh.length;
+  // Measured against everything still outstanding. Using the truncated list
+  // here would let --top 3 announce a 98% reduction on a project with 82
+  // findings left, which is the tool congratulating itself for looking away.
+  const removed = raw - outstanding;
   // Integer percentage: a float here would print differently across locales.
   const percent = raw === 0 ? 0 : Math.round((removed * 100) / raw);
 
   return paint(
-    `  ${raw} reported → ${merged} after merge → ${fixNow.length} to fix` +
+    `  ${raw} reported → ${merged} after merge → ${outstanding} to fix` +
       (raw === 0 ? "" : `  (${percent}% less noise)`) +
+      (fixNow.length < outstanding ? `, showing ${fixNow.length}` : "") +
       (applied.suppressed.length > 0
         ? `, ${applied.suppressed.length} already accepted`
         : ""),
@@ -311,7 +328,8 @@ export function renderJson(result: JudgeResult): string {
       summary: {
         raw: result.raw,
         merged: result.merged,
-        fixNow: result.fixNow.length,
+        fixNow: result.applied.fresh.length,
+        shown: result.fixNow.length,
         accepted: result.applied.suppressed.length,
         noLongerReported: result.applied.noLongerReported.length,
       },
@@ -320,8 +338,8 @@ export function renderJson(result: JudgeResult): string {
       skipped: result.skipped,
       // The commands, so a caller does not have to re-derive them from the
       // findings and get the version comparison subtly wrong.
-      upgrades: upgradeActions(result.fixNow),
-      transitiveFixes: transitiveFixes(result.fixNow),
+      upgrades: upgradeActions(result.applied.fresh),
+      transitiveFixes: transitiveFixes(result.applied.fresh),
       fixNow: result.fixNow.map((entry) => ({
         fingerprint: entry.finding.fingerprint,
         score: entry.score,
