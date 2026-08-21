@@ -144,7 +144,7 @@ pnpm과 npm 6 리포트 형식도 읽습니다.
 --format <fmt>        text (기본) | json | sarif
 --output <file>       stdout 대신 파일로 씀
 --explain             각 점수가 어떻게 나왔는지 보여줌
---top <n>             최대 n개만 보고
+--top <n>             최대 n줄만 출력 (수치와 조치 안내는 프로젝트 전체 기준 유지)
 --update-baseline     현재 항목들을 수용으로 기록
 --baseline <file>     baseline 위치 (기본 .zero-shelter/baseline.json)
 --cwd <dir>           프로젝트 디렉터리

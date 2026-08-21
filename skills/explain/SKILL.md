@@ -12,7 +12,7 @@ Shape:
 
 ```json
 {
-  "summary": { "raw": 7, "merged": 7, "fixNow": 7, "accepted": 0, "noLongerReported": 0 },
+  "summary": { "raw": 7, "merged": 7, "fixNow": 7, "shown": 7, "accepted": 0, "noLongerReported": 0 },
   "skipped": ["osv-scanner skipped: not on PATH (optional …)"],
   "upgrades": [{ "packageName": "lodash", "upgradeTo": "4.18.1", "clears": 7, "command": "npm i lodash@4.18.1" }],
   "transitiveFixes": [{ "packageName": "tar", "upgradeTo": "7.5.21", "clears": 2 }],
@@ -39,6 +39,7 @@ Shape:
 |---|---|
 | `summary.raw → merged` | How many reports collapsed into one finding. A big drop means the scanners were describing the same vulnerabilities under different names |
 | `summary.accepted` | Recorded in the baseline, deliberately not shown |
+| `summary.fixNow` vs `summary.shown` | Everything outstanding, versus how many rows `--top` printed. Quote the first; the second is a page size |
 | `score` | Why this is above that. Not a CVSS score, not a risk rating — our ranking, explainable with `--explain` |
 | `fixedIn` | Present means there is a version to move to. Absent means awareness only, and it ranks lower for that reason |
 | `direct` | A direct dependency is something this project can act on today |
