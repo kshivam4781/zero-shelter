@@ -40,6 +40,17 @@ change introduced. Explain that trade before running it: **anything recorded is
 no longer shown**, so run it when the current list has actually been looked at,
 not to make output disappear.
 
+## After someone fixes something
+
+Re-run `judge`. Findings that were accepted and are no longer reported get their
+own line, so the work that was just done is visible instead of showing up as a
+number quietly getting smaller. If a scanner that contributed to the baseline
+did not run this time, that line says so — do not upgrade "no longer reported"
+into "fixed" when the CLI itself is hedging.
+
+Prune the baseline afterwards with `--update-baseline` so it stops listing
+fingerprints nothing produces.
+
 ## Wiring it in
 
 Offer these; do not add them unasked.

@@ -3,6 +3,7 @@
  */
 
 import type { AppliedBaseline } from "./baseline.js";
+import { transitiveFixes, upgradeActions } from "./actions.js";
 import type { RankedFinding } from "./triage.js";
 import { WEIGHTS } from "./triage.js";
 
@@ -88,6 +89,41 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
         `→ ${row.fix.padEnd(width("fix"))}`,
         paint(row.score.padStart(width("score")), COLOR.dim),
       ].join("  "),
+    );
+  }
+
+  const actions = upgradeActions(fixNow);
+  if (actions.length > 0) {
+    lines.push("");
+    for (const action of actions.slice(0, 3)) {
+      lines.push(
+        `  ${paint(action.command, COLOR.bold)}` +
+          paint(
+            action.clears === 1 ? "" : `   clears ${action.clears}`,
+            COLOR.dim,
+          ),
+      );
+    }
+    if (actions.length > 3) {
+      lines.push(paint(`  …and ${actions.length - 3} more package(s)`, COLOR.dim));
+    }
+  }
+
+  const indirect = transitiveFixes(fixNow);
+  if (indirect.length > 0) {
+    const total = indirect.reduce((sum, entry) => sum + entry.clears, 0);
+    if (actions.length === 0) lines.push("");
+    lines.push(
+      paint(
+        `  ${total} finding(s) in ${indirect.length} package(s) have a published fix but ` +
+          "arrive through another dependency",
+        COLOR.dim,
+      ),
+      paint(
+        `    package.json "overrides": { "${indirect[0]!.packageName}": "${indirect[0]!.upgradeTo}" }` +
+          " forces one, at the risk of breaking whatever pinned it",
+        COLOR.dim,
+      ),
     );
   }
 
@@ -236,6 +272,10 @@ export function renderJson(result: JudgeResult): string {
       noLongerReported: result.applied.noLongerReported,
       warning: result.applied.warning,
       skipped: result.skipped,
+      // The commands, so a caller does not have to re-derive them from the
+      // findings and get the version comparison subtly wrong.
+      upgrades: upgradeActions(result.fixNow),
+      transitiveFixes: transitiveFixes(result.fixNow),
       fixNow: result.fixNow.map((entry) => ({
         fingerprint: entry.finding.fingerprint,
         score: entry.score,

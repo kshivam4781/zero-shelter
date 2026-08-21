@@ -34,6 +34,8 @@ fix these 5 now
   high      minimatch  GHSA-7R86-CG39-JMMJ  → —  100
   high      lodash     GHSA-35JH-R3H4-6JHM  → —   95
 
+  npm i minimist@1.2.8   clears 2
+
   13 reported → 13 after merge → 5 to fix  (62% less noise)
   first run — record these as accepted with --update-baseline, then only new findings are reported
 ```
@@ -228,6 +230,7 @@ npm ci
 npm test
 npm run typecheck
 npm run third-party   # regenerate THIRD_PARTY.md
+npm run qa            # pack, install into a temp project, check the install experience
 ```
 
 Node 20 or later.

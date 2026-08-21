@@ -68,11 +68,24 @@ The bar for this area. Every line is a command someone else can run.
 | 9 | `npx zero-shelter` with no subcommand | Same as `judge` | ✅ |
 | 10 | Second run after `--update-baseline` | `✓ nothing new to fix`, exit 0 — the honest one | ✅ |
 
+## Running it
+
+```bash
+npm run qa
+```
+
+Packs the package, installs the tarball into a throwaway project, and runs the
+checks against that — not against the working copy. The distinction is the
+point: this exact check caught a merge that deleted a shipped feature while
+every test and all three CI matrices stayed green, because the tests for the
+deleted code were deleted along with it.
+
 ## Definition of done — 2026-08-25 24:00
 
-All ten green, verified on a clean machine state (`npx --yes zero-shelter@latest`
-against a throwaway project, not a working copy), and the result posted as a QA
-report in Discussions.
+All ten green from `npm run qa`, and the result posted as a QA report in
+Discussions. Once a version is published, the same checks should be repeated
+against `npx --yes zero-shelter@latest` — packing locally proves the tree is
+sound, not that the registry has it.
 
 Exit codes, which CI depends on and therefore cannot change casually:
 
