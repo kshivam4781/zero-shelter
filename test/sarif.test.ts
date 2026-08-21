@@ -104,3 +104,43 @@ describe("renderSarif", () => {
     expect(empty.version).toBe("2.1.0");
   });
 });
+
+describe("what to do about it", () => {
+  const build = (findings: readonly Parameters<typeof judge>[0][number][]) =>
+    JSON.parse(renderSarif(judge(findings, { baseline: emptyBaseline() })));
+
+  it("puts the command in the alert a direct dependency produces", () => {
+    const sarif = build(parseNpmAudit(raw));
+    const withCommand = sarif.runs[0].results.filter((result: { message: { text: string } }) =>
+      result.message.text.includes("npm i "),
+    );
+
+    // A Security tab is one click from prose about the advisory and nowhere
+    // near the line that resolves it.
+    expect(withCommand.length).toBeGreaterThan(0);
+    expect(withCommand[0].properties.remedy).toMatch(/^npm i /);
+  });
+
+  it("does not tell anyone to npm i a transitive package", () => {
+    const sarif = build(parseNpmAudit(raw));
+
+    for (const result of sarif.runs[0].results) {
+      const remedy: string | undefined = result.properties.remedy;
+      if (remedy?.startsWith("npm i ")) {
+        expect(result.properties.reasons.join(" ")).toContain("direct dependency");
+      }
+    }
+  });
+
+  it("stays quiet when there is no published fix", () => {
+    const unfixable = parseNpmAudit(raw).filter(
+      (finding) => finding.fixedIn === undefined && !finding.fixAvailable,
+    );
+    if (unfixable.length === 0) return;
+
+    const sarif = build(unfixable);
+    for (const result of sarif.runs[0].results) {
+      expect(result.properties.remedy).toBeUndefined();
+    }
+  });
+});

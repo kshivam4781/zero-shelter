@@ -92,9 +92,11 @@ pnpm and npm 6 report formats are read too.
     sarif_file: zero-shelter.sarif
 ```
 
-Findings land in the Security tab and annotate the pull request. Fingerprints
-are stable across machines and runs, so GitHub recognises an alert it has
-already seen instead of reopening it every build.
+Findings land in the Security tab and annotate the pull request, each one
+carrying what to do about it — `npm i lodash@4.18.1` for a direct dependency,
+or the `overrides` entry that forces a transitive one. Fingerprints are stable
+across machines and runs, so GitHub recognises an alert it has already seen
+instead of reopening it every build.
 
 There is an irony here worth naming: this project exists because SARIF from
 different tools cannot be reconciled by the tools that consume it. Emitting

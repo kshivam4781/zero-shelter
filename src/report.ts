@@ -249,8 +249,37 @@ export function renderExplain(result: JudgeResult): string {
     lines.push("");
   }
 
-  lines.push(`weights: ${JSON.stringify(WEIGHTS)}`);
+  lines.push(...weightsTable());
   return lines.join("\n");
+}
+
+/**
+ * The weights, readable.
+ *
+ * This section exists so the ranking can be argued with, and a one-line JSON
+ * dump is not something anyone argues with — they skip it. Flattened to
+ * `label  points` so a disagreement can point at a row.
+ */
+function weightsTable(): string[] {
+  const rows: [string, number][] = [
+    ...Object.entries(WEIGHTS.severity).map(
+      ([name, points]) => [`severity: ${name}`, points] as [string, number],
+    ),
+    ["direct dependency", WEIGHTS.directDependency],
+    ["fix available", WEIGHTS.fixAvailable],
+    ["each extra tool that agrees", WEIGHTS.corroboratedPerExtraTool],
+    ["has an unjoined sibling", WEIGHTS.hasUnjoinedSibling],
+  ];
+
+  const width = Math.max(...rows.map(([label]) => label.length));
+
+  return [
+    "weights — every point above comes from this table",
+    ...rows.map(([label, points]) => `  ${label.padEnd(width)}  ${String(points).padStart(4)}`),
+    "",
+    "Disagree with a row rather than with the order: change the number and every",
+    "run changes with it, which is the only way the ranking stays checkable.",
+  ];
 }
 
 /**
