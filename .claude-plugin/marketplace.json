@@ -1,0 +1,22 @@
+{
+  "name": "zero-shelter",
+  "description": "Local, deterministic judgement of dependency scanner output — what to fix now, with the reasoning shown.",
+  "owner": {
+    "name": "zero-shelter",
+    "url": "https://github.com/zero-shelter"
+  },
+  "plugins": [
+    {
+      "name": "zero-shelter",
+      "source": "./",
+      "description": "Run the local dependency judge and read its output: what to fix now, why that order, and what to record as accepted.",
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/zero-shelter/zero-shelter",
+      "keywords": [
+        "security",
+        "dependencies",
+        "sca"
+      ]
+    }
+  ]
+}

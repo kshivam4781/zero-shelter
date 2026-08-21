@@ -103,6 +103,21 @@ pnpm과 npm 6 리포트 형식도 읽습니다.
 요청하지도 않은 보안 리포트 때문에 남의 작업 세션이 끊기는 건 아무 말도 안 하는
 것보다 나쁩니다. [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md)를 보세요.
 
+## Claude Code 플러그인으로
+
+```
+/plugin marketplace add zero-shelter/zero-shelter
+/plugin install zero-shelter@zero-shelter
+```
+
+스킬 두 개입니다. `/zero-shelter:setup`은 첫 스캔을 돌리고 CI·훅 연동을 제안하고,
+`/zero-shelter:explain`은 실행 결과를 읽어 무엇부터 고칠지와 그 이유를 말합니다.
+
+둘 다 **표현만** 합니다. 스킬에게 findings를 재정렬·필터링·추가하지 말라고,
+심각도를 직접 추론하는 대신 `--explain` 출력을 인용하라고 지시해 두었습니다.
+판정은 CLI에 남아 있어야 같은 입력에 같은 답이 나오고 검증이 가능합니다.
+화면에 오는 길에 모델이 순서를 바꾸면 그 성질이 사라집니다.
+
 ## 옵션
 
 ```
