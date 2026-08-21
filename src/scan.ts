@@ -8,6 +8,8 @@
  */
 
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { promisify } from "node:util";
 import type { ScaFinding } from "./finding.js";
 import { parseNpmAudit } from "./ingest/npm-audit.js";
@@ -59,19 +61,39 @@ export async function collect(options: ScanOptions): Promise<Collected> {
   const skipped: string[] = [];
   const contributed: string[] = [];
 
-  const audit = await runNpmAudit(options);
+  // Which audit to run is decided by the lockfile in front of us. `npm audit`
+  // needs a package-lock.json and fails with ENOLOCK in a pnpm project, which
+  // used to leave a pnpm user with "nothing was scanned" and a tool that claims
+  // in its README to read their reports.
+  const audit = existsSync(join(options.cwd, "pnpm-lock.yaml"))
+    ? await runPnpmAudit(options)
+    : await runNpmAudit(options);
   if (audit.ok) {
     // A scanner that produced output we cannot read is worth saying out loud.
     // Swallowing it would silently drop a whole source and still look like a
     // clean run.
     try {
       findings.push(...parseNpmAudit(audit.stdout));
-      contributed.push("npm audit");
+      contributed.push(audit.tool ?? "npm audit");
     } catch (error) {
-      skipped.push(`npm audit output unreadable: ${(error as Error).message}`);
+      skipped.push(`${audit.tool ?? "npm audit"} output unreadable: ${(error as Error).message}`);
     }
   } else {
-    skipped.push(`npm audit skipped: ${audit.reason}`);
+    skipped.push(`${audit.tool ?? "npm audit"} skipped: ${audit.reason}`);
+  }
+
+  // yarn v1 writes NDJSON, which nothing here reads. Saying so beats letting
+  // the run end in "nothing was scanned" with no hint about why.
+  if (
+    contributed.length === 0 &&
+    existsSync(join(options.cwd, "yarn.lock")) &&
+    !existsSync(join(options.cwd, "package-lock.json"))
+  ) {
+    skipped.push(
+      "yarn.lock found: yarn's audit output is not read yet. " +
+        "Run `yarn npm audit --json > audit.json` (yarn 2+) and pass it with --input, " +
+        "or generate a package-lock.json with `npm i --package-lock-only`",
+    );
   }
 
   const osv = await runOsvScanner(options);
@@ -90,8 +112,8 @@ export async function collect(options: ScanOptions): Promise<Collected> {
 }
 
 type Attempt =
-  | { ok: true; stdout: string; version?: string }
-  | { ok: false; reason: string };
+  | { ok: true; stdout: string; version?: string; tool?: string }
+  | { ok: false; reason: string; tool?: string };
 
 /**
  * `npm audit` exits non-zero whenever it finds anything, which is the normal
@@ -136,6 +158,32 @@ function npmError(stdout: string): string | undefined {
 
   if (said !== "") return said;
   return typeof code === "string" ? `npm reported ${code}` : "npm reported an error";
+}
+
+/**
+ * pnpm reports in the older `advisories` shape, which the npm parser already
+ * reads — so this is a different process to spawn, not a different format to
+ * support.
+ */
+async function runPnpmAudit(options: ScanOptions): Promise<Attempt> {
+  const run = options.capture ?? capture;
+  const stdout = await run("pnpm", ["audit", "--json"], options);
+
+  if (stdout === undefined) {
+    return {
+      ok: false,
+      tool: "pnpm audit",
+      reason: "pnpm-lock.yaml is here but pnpm is not on PATH",
+    };
+  }
+  if (stdout.trim() === "") {
+    return { ok: false, tool: "pnpm audit", reason: "pnpm produced no report" };
+  }
+
+  const explained = npmError(stdout);
+  if (explained !== undefined) return { ok: false, tool: "pnpm audit", reason: explained };
+
+  return { ok: true, stdout, tool: "pnpm audit" };
 }
 
 async function runOsvScanner(options: ScanOptions): Promise<Attempt> {
