@@ -59,7 +59,7 @@ The bar for this area. Every line is a command someone else can run.
 |---|---|---|---|
 | 1 | No lockfile in the directory | Says a lockfile is required and how to get one. Exit 2 (cannot judge), never 0 | ✅ repeats npm's own explanation, exit 2 |
 | 2 | `--version` | Prints the version | ✅ #42 (@msnodeve) |
-| 3 | Node older than 20 | Says which version is required and which is running | ⚠️ npm warns on install; running it is untested |
+| 3 | Node older than 20 | Says which version is required and which is running | ✅ checked before anything loads, exit 2 |
 | 4 | `osv-scanner` absent | Runs to completion on npm audit alone, one quiet note | ✅ |
 | 5 | `--help` | Covers `judge` and `hook`, every flag, exit codes | ✅ |
 | 6 | Windows, macOS, Linux | Identical output | ✅ 3-OS CI |
