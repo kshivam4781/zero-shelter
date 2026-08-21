@@ -19,6 +19,13 @@ export interface Collected {
   readonly findings: ScaFinding[];
   /** Human-readable notes about sources that did not contribute. */
   readonly skipped: string[];
+  /**
+   * Tools that produced a report we could read.
+   *
+   * Empty means nothing was scanned — which is not the same as finding
+   * nothing, and the caller has to be able to tell those apart.
+   */
+  readonly contributed: string[];
 }
 
 /**
@@ -50,6 +57,7 @@ const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 export async function collect(options: ScanOptions): Promise<Collected> {
   const findings: ScaFinding[] = [];
   const skipped: string[] = [];
+  const contributed: string[] = [];
 
   const audit = await runNpmAudit(options);
   if (audit.ok) {
@@ -58,6 +66,7 @@ export async function collect(options: ScanOptions): Promise<Collected> {
     // clean run.
     try {
       findings.push(...parseNpmAudit(audit.stdout));
+      contributed.push("npm audit");
     } catch (error) {
       skipped.push(`npm audit output unreadable: ${(error as Error).message}`);
     }
@@ -69,6 +78,7 @@ export async function collect(options: ScanOptions): Promise<Collected> {
   if (osv.ok) {
     try {
       findings.push(...parseOsv(osv.stdout, osv.version));
+      contributed.push("osv-scanner");
     } catch (error) {
       skipped.push(`osv-scanner output unreadable: ${(error as Error).message}`);
     }
@@ -76,7 +86,7 @@ export async function collect(options: ScanOptions): Promise<Collected> {
     skipped.push(`osv-scanner skipped: ${osv.reason}`);
   }
 
-  return { findings, skipped };
+  return { findings, skipped, contributed };
 }
 
 type Attempt =
@@ -92,7 +102,40 @@ async function runNpmAudit(options: ScanOptions): Promise<Attempt> {
   const stdout = await run("npm", ["audit", "--json"], options);
   if (stdout === undefined) return { ok: false, reason: "npm is not available" };
   if (stdout.trim() === "") return { ok: false, reason: "npm produced no report" };
+
+  // npm reports its own failures as JSON with an `error` envelope — no
+  // lockfile, a private registry it cannot reach, a workspace it cannot
+  // resolve. Passing that to the parser turns npm's clear explanation into
+  // "output has neither vulnerabilities nor advisories", which sends people
+  // looking for a bug in us.
+  const explained = npmError(stdout);
+  if (explained !== undefined) return { ok: false, reason: explained };
+
   return { ok: true, stdout };
+}
+
+function npmError(stdout: string): string | undefined {
+  let report: unknown;
+  try {
+    report = JSON.parse(stdout);
+  } catch {
+    return undefined;
+  }
+
+  if (typeof report !== "object" || report === null || !("error" in report)) return undefined;
+
+  const { error } = report as { error?: unknown };
+  if (typeof error !== "object" || error === null) return undefined;
+
+  const { summary, detail, code } = error as Record<string, unknown>;
+  const said = [summary, detail]
+    .filter((part): part is string => typeof part === "string" && part.trim() !== "")
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (said !== "") return said;
+  return typeof code === "string" ? `npm reported ${code}` : "npm reported an error";
 }
 
 async function runOsvScanner(options: ScanOptions): Promise<Attempt> {

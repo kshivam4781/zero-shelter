@@ -27,19 +27,29 @@ Node 20 or later. No runtime dependencies, 47.5 kB packed.
 
 ## What the first run must never do
 
-**Report success when it checked nothing.** Today it does:
+**Report success when it checked nothing.** It used to:
 
 ```console
-$ cd /tmp/empty-dir && npx zero-shelter judge
-  npm audit output unreadable: npm audit output has neither `vulnerabilities` …
-  osv-scanner skipped: not on PATH (optional …)
-
+$ cd /tmp/empty-dir && npx zero-shelter judge     # before
 ✓ nothing new to fix          # exit 0
 ```
 
-There is no lockfile here, so nothing was scanned. "nothing new to fix" and a
-zero exit code say the opposite. In CI this is worse than a crash: the pipeline
-goes green on a project the tool never looked at.
+There is no lockfile there, so nothing was scanned, and both the sentence and
+the exit code said the opposite. In CI that is worse than a crash: the pipeline
+goes green on a project the tool never looked at, and nobody investigates a
+passing build. Now:
+
+```console
+$ cd /tmp/empty-dir && npx zero-shelter judge     # after
+cannot judge /tmp/empty-dir: no scanner produced a report
+  npm audit skipped: This command requires an existing lockfile. Try creating one first with: npm i --package-lock-only
+  osv-scanner skipped: not on PATH (optional — install it for cross-source deduplication)
+nothing was scanned, so this is not a pass       # exit 2
+```
+
+The rule this follows: a source that produced a report we could read counts as
+scanned; anything else does not, and zero sources scanned can never be a pass.
+"Scanned and found nothing" stays exit 0 — that distinction is the whole point.
 
 ## QA checklist
 
@@ -47,14 +57,14 @@ The bar for this area. Every line is a command someone else can run.
 
 | # | Case | Expected | Now |
 |---|---|---|---|
-| 1 | No lockfile in the directory | Says a lockfile is required and how to get one. Exit 2 (cannot judge), never 0 | ❌ says "nothing new to fix", exit 0 |
-| 2 | `--version` | Prints the version | ❌ errors, then prints help |
+| 1 | No lockfile in the directory | Says a lockfile is required and how to get one. Exit 2 (cannot judge), never 0 | ✅ repeats npm's own explanation, exit 2 |
+| 2 | `--version` | Prints the version | ✅ #42 (@msnodeve) |
 | 3 | Node older than 20 | Says which version is required and which is running | ⚠️ npm warns on install; running it is untested |
 | 4 | `osv-scanner` absent | Runs to completion on npm audit alone, one quiet note | ✅ |
 | 5 | `--help` | Covers `judge` and `hook`, every flag, exit codes | ✅ |
 | 6 | Windows, macOS, Linux | Identical output | ✅ 3-OS CI |
 | 7 | Install footprint | No runtime dependencies; only `dist`, README, LICENSE shipped | ✅ 49 files, 47.5 kB |
-| 8 | Scanner message accuracy | Names formats we actually parse | ❌ still mentions yarn v1, which we do not read |
+| 8 | Scanner message accuracy | Names formats we actually parse | ✅ yarn v1 removed |
 | 9 | `npx zero-shelter` with no subcommand | Same as `judge` | ✅ |
 | 10 | Second run after `--update-baseline` | `✓ nothing new to fix`, exit 0 — the honest one | ✅ |
 
