@@ -12,8 +12,11 @@ Shape:
 
 ```json
 {
-  "summary": { "raw": 7, "merged": 7, "fixNow": 7, "accepted": 0 },
+  "summary": { "raw": 7, "merged": 7, "fixNow": 7, "accepted": 0, "noLongerReported": 0 },
   "skipped": ["osv-scanner skipped: not on PATH (optional …)"],
+  "upgrades": [{ "packageName": "lodash", "upgradeTo": "4.18.1", "clears": 7, "command": "npm i lodash@4.18.1" }],
+  "transitiveFixes": [{ "packageName": "tar", "upgradeTo": "7.5.21", "clears": 2 }],
+  "noLongerReported": [],
   "fixNow": [
     {
       "fingerprint": "fff5bce689ef200b",
@@ -41,19 +44,24 @@ Shape:
 | `direct` | A direct dependency is something this project can act on today |
 | `tools` | Two entries means two scanners independently reported it |
 | `possibleDuplicates` | Suspected same-as, **not merged**. Deliberate: hiding a real vulnerability is worse than showing a duplicate |
+| `upgrades` | The commands. Already grouped and version-compared — use these instead of deriving your own from `fixedIn` |
+| `transitiveFixes` | Has a fix, but arrives through another dependency. `npm i` does not fix these; `overrides` does, at the risk of breaking the parent |
+| `noLongerReported` | Accepted findings nothing reported this run |
 
 ## How to present it
 
-Lead with the top few and what to do about them — a package and a version to
-move to is an action; a paragraph about prototype pollution is not.
+Lead with `upgrades` — a command is an action; a paragraph about prototype
+pollution is not.
 
 ```
-lodash 4.17.11 → 4.18.1 fixes 4 of the 7, including both criticals.
+npm i lodash@4.18.1        clears 7 of the 9, including both criticals
+2 more have a fix but come in through other packages (overrides can force them)
 The remaining 3 have no published fix; they are listed so you know they exist.
 ```
 
-Group by package: one upgrade usually clears several findings, and a list
-sorted by severity hides that.
+Do not re-derive the commands from `fixedIn`. The CLI already picked the highest
+fix per package, and comparing versions as strings puts 4.17.21 above 4.18.1 —
+which would send someone to an older release than the one they need.
 
 When asked why something is ranked where it is, run:
 
@@ -77,3 +85,14 @@ and your reconstruction is not.
 - **Never call a run clean when it exited 2** — that means nothing was scanned.
   `summary` may look empty and it is not evidence of anything.
 - Numbers come from the JSON. If you did not run it, do not describe a run.
+
+## After a fix
+
+Re-run. `noLongerReported` lists accepted findings nothing produced this time,
+and the text output says so in a line of its own.
+
+Say "no longer reported", not "fixed", unless the run confirms it: a finding
+also disappears when the scanner that found it did not run. When that doubt
+applies, the CLI names the missing scanner — repeat that caveat rather than
+dropping it, and suggest `--update-baseline` to prune the entries that are
+genuinely gone.
