@@ -79,7 +79,12 @@ you are never told to go install something before you can see output. Installing
 it is worth doing though: it is what lets two sources be reconciled, which is
 where most of the deduplication comes from.
 
-pnpm and npm 6 report formats are read too.
+pnpm projects work the same way: a `pnpm-lock.yaml` makes it run `pnpm audit`
+instead. npm 6's older report shape is read too.
+
+yarn is not supported yet — yarn v1 writes NDJSON, which nothing here parses.
+A yarn project is told so, with the two ways around it, instead of ending in
+"nothing was scanned".
 
 ## In CI
 
