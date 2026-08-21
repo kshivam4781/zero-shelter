@@ -218,6 +218,12 @@ function summary(
 export function renderExplain(result: JudgeResult): string {
   const lines: string[] = [];
 
+  // Fingerprints identify a finding but say nothing about it. When a possible
+  // duplicate is named, the reader needs to know which advisory to go compare.
+  const byFingerprint = new Map(
+    result.fixNow.map((entry) => [entry.finding.fingerprint, entry.finding]),
+  );
+
   for (const entry of result.fixNow) {
     const { finding } = entry;
     lines.push(`${finding.packageName}  ${finding.advisoryId}  score ${entry.score}`);
@@ -240,9 +246,20 @@ export function renderExplain(result: JudgeResult): string {
     }
 
     if (finding.relatedTo.length > 0) {
+      const named = finding.relatedTo.map((fingerprint) => {
+        const other = byFingerprint.get(fingerprint);
+        return other === undefined
+          ? fingerprint
+          : `${other.advisoryId}${other.fixedIn === undefined ? "" : ` (fixed in ${other.fixedIn})`}`;
+      });
+
       lines.push(
-        `  ${"".padStart(5)}  not merged with ${finding.relatedTo.join(", ")} ` +
-          `— same package, no shared advisory id`,
+        `  ${"".padStart(5)}  not merged with ${named.join(", ")} ` +
+          "— same package, no shared advisory id",
+      );
+      lines.push(
+        `  ${"".padStart(5)}  check whether those describe the same issue: if they do, ` +
+          "one upgrade closes them together and this list is longer than the work",
       );
     }
 

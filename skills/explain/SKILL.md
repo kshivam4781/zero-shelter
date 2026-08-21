@@ -63,6 +63,11 @@ Do not re-derive the commands from `fixedIn`. The CLI already picked the highest
 fix per package, and comparing versions as strings puts 4.17.21 above 4.18.1 —
 which would send someone to an older release than the one they need.
 
+`--explain` also names the possible duplicates by advisory rather than by
+fingerprint, so they can actually be compared. When two of them turn out to
+describe the same issue, one upgrade closes both and the list was longer than
+the work.
+
 When asked why something is ranked where it is, run:
 
 ```bash

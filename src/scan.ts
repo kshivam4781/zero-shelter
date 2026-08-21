@@ -147,9 +147,15 @@ async function runOsvScanner(options: ScanOptions): Promise<Attempt> {
   );
 
   if (stdout === undefined) {
+    // Cross-source reconciliation is where most of the noise reduction comes
+    // from, so "optional" undersells it — but telling someone to go install
+    // something without saying how is how a suggestion becomes a chore.
     return {
       ok: false,
-      reason: "not on PATH (optional — install it for cross-source deduplication)",
+      reason:
+        "not on PATH — a second source is where most of the deduplication comes " +
+        "from. brew install osv-scanner, or " +
+        "https://github.com/google/osv-scanner/releases",
     };
   }
   if (stdout.trim() === "") return { ok: false, reason: "produced no report" };

@@ -39,6 +39,25 @@ describe("agent hook", () => {
     expect(hookContext(accepted)).toBeUndefined();
   });
 
+  it("hands over the commands, not just the diagnosis", () => {
+    const context = hookContext(result) ?? "";
+
+    // An agent told only what is broken invents a fix, and the invented fix is
+    // usually `npm i something@latest` on a transitive package.
+    expect(context).toContain("Fixable now:");
+    expect(context).toMatch(/\$ npm i \S+@\S+/);
+  });
+
+  it("keeps the findings and the commands visually apart", () => {
+    const context = hookContext(result) ?? "";
+    const bullets = context.split("\n").filter((line) => line.startsWith("- "));
+    const commands = context.split("\n").filter((line) => line.startsWith("$ "));
+
+    expect(bullets.length).toBeGreaterThan(0);
+    expect(commands.length).toBeGreaterThan(0);
+    expect(bullets.some((line) => line.includes("npm i "))).toBe(false);
+  });
+
   it("emits the additionalContext shape agents read", () => {
     const parsed = JSON.parse(hookOutput("hello"));
 

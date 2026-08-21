@@ -22,8 +22,9 @@ Requires Node 20+. If it prints a Node version message, that is the whole
 problem; do not try to work around it.
 
 `osv-scanner` is optional. When it is absent the run still works and says so
-once. Installing it is what lets two sources be reconciled, which is where most
-of the deduplication comes from — mention it once, do not nag.
+once, with the install line (`brew install osv-scanner`, or the releases page).
+A second source is where most of the deduplication comes from, so it is worth
+one mention — and only one.
 
 ## Recording the backlog
 

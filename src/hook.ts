@@ -16,6 +16,7 @@
  *   staying quiet. Every failure path here ends in "say nothing, exit 0".
  */
 
+import { upgradeActions } from "./actions.js";
 import type { JudgeResult } from "./report.js";
 
 /** How many findings an agent can act on without the context becoming noise. */
@@ -38,10 +39,32 @@ export function hookContext(result: JudgeResult): string | undefined {
   const more =
     result.fixNow.length > LIMIT ? ` (${result.fixNow.length - LIMIT} more not shown)` : "";
 
+  // An agent that knows what is broken and not how to fix it will invent a
+  // way, and the invented way is usually `npm i package@latest` on something
+  // transitive. The commands are already computed; withholding them here just
+  // moves the guessing.
+  const commands = upgradeActions(result.fixNow).slice(0, LIMIT);
+  const remedy =
+    commands.length === 0
+      ? []
+      : [
+          "Fixable now:",
+          // `$` rather than `-`: the findings above are a bulleted list and
+          // these are commands to run. Two identical-looking lists in one
+          // context is how an agent ends up "fixing" a finding by pasting its
+          // title somewhere.
+          ...commands.map(
+            (action) =>
+              `$ ${action.command}` +
+              (action.clears === 1 ? "" : `   # clears ${action.clears}`),
+          ),
+        ];
+
   return [
     `zero-shelter: this project has ${result.fixNow.length} unaddressed dependency ` +
       `finding(s)${more}. Highest priority first:`,
     ...lines,
+    ...remedy,
     "Do not introduce versions that reintroduce these. Run `npx zero-shelter judge --explain` for the reasoning behind the order.",
   ].join("\n");
 }
