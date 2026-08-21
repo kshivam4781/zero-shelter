@@ -55,6 +55,7 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
   if (fixNow.length === 0) {
     lines.push(paint("✓ nothing new to fix", COLOR.green));
     lines.push(summary(result, paint));
+    lines.push(...resolvedLines(result, paint));
     return lines.join("\n");
   }
 
@@ -92,6 +93,8 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
 
   lines.push("", summary(result, paint));
 
+  lines.push(...resolvedLines(result, paint));
+
   // A first run on an existing project reports its whole backlog and reduces
   // nothing, which reads like the tool failing. Say what it is actually for.
   if (!result.baselineExists) {
@@ -116,6 +119,45 @@ export function renderHuman(result: JudgeResult, color: boolean): string {
   }
 
   return lines.join("\n");
+}
+
+/**
+ * Credit for work that was actually done, and the caveat that comes with it.
+ *
+ * Someone who upgrades a package and re-runs this deserves to see that it
+ * worked; without it the only feedback is a number quietly getting smaller.
+ * But a finding also disappears when the scanner that found it did not run this
+ * time, and from here those look identical — so this says what it can defend
+ * ("no longer reported") and names the doubt when there is one.
+ */
+function resolvedLines(
+  result: JudgeResult,
+  paint: (text: string, code: string) => string,
+): string[] {
+  const gone = result.applied.noLongerReported.length;
+  if (gone === 0) return [];
+
+  const lines = [
+    paint(
+      `  ✓ ${gone} accepted finding(s) no longer reported — ` +
+        "re-record with --update-baseline to drop them",
+      COLOR.green,
+    ),
+  ];
+
+  const { missingSources } = result.applied;
+  if (missingSources.length > 0) {
+    lines.push(
+      paint(
+        `    (${missingSources.join(", ")} contributed when the baseline was ` +
+          "recorded and did not run this time, so some of those may simply not " +
+          "have been looked for)",
+        COLOR.dim,
+      ),
+    );
+  }
+
+  return lines;
 }
 
 function summary(
@@ -189,7 +231,9 @@ export function renderJson(result: JudgeResult): string {
         merged: result.merged,
         fixNow: result.fixNow.length,
         accepted: result.applied.suppressed.length,
+        noLongerReported: result.applied.noLongerReported.length,
       },
+      noLongerReported: result.applied.noLongerReported,
       warning: result.applied.warning,
       skipped: result.skipped,
       fixNow: result.fixNow.map((entry) => ({

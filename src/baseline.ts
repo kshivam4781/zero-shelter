@@ -16,11 +16,35 @@ export interface Baseline {
   readonly schemaVersion: string;
   /** Sorted fingerprints. Readable on purpose — reviewers should be able to diff it. */
   readonly accepted: readonly string[];
+  /**
+   * Which scanners produced a report when this was recorded.
+   *
+   * Without it, a finding that disappears because a scanner stopped running is
+   * indistinguishable from one that disappeared because someone fixed it.
+   * Optional: baselines written before this existed simply do not know, and are
+   * treated as such rather than assumed complete.
+   */
+  readonly sources?: readonly string[];
 }
 
 export interface AppliedBaseline {
   readonly fresh: RankedFinding[];
   readonly suppressed: RankedFinding[];
+  /**
+   * Accepted fingerprints that nothing reported this time.
+   *
+   * Deliberately not called "fixed" on its own: a finding also disappears when
+   * the scanner that found it did not run. `missingSources` says whether that
+   * doubt applies to this particular run.
+   */
+  readonly noLongerReported: string[];
+  /**
+   * Scanners that contributed when the baseline was recorded and did not this
+   * time — the reason `noLongerReported` might not mean what it looks like.
+   * Empty when every recorded source ran again, or when the baseline predates
+   * source recording and there is nothing to compare.
+   */
+  readonly missingSources: string[];
   /**
    * Set when the baseline could not be honoured. The caller must show this:
    * silently ignoring a stale baseline turns every known finding into a new
@@ -42,6 +66,7 @@ export function parseBaseline(raw: string): Baseline {
   const record = parsed as Record<string, unknown>;
   const schemaVersion = record["schemaVersion"];
   const accepted = record["accepted"];
+  const sources = record["sources"];
 
   if (typeof schemaVersion !== "string") {
     throw new Error(`${BASELINE_PATH} has no schemaVersion`);
@@ -50,20 +75,36 @@ export function parseBaseline(raw: string): Baseline {
     throw new Error(`${BASELINE_PATH} accepted must be an array of strings`);
   }
 
-  return { schemaVersion, accepted: [...(accepted as string[])].sort() };
+  if (
+    sources !== undefined &&
+    (!Array.isArray(sources) || sources.some((v) => typeof v !== "string"))
+  ) {
+    throw new Error(`${BASELINE_PATH} sources must be an array of strings`);
+  }
+
+  return {
+    schemaVersion,
+    accepted: [...(accepted as string[])].sort(),
+    ...(sources === undefined ? {} : { sources: [...(sources as string[])].sort() }),
+  };
 }
 
 export function serializeBaseline(baseline: Baseline): string {
   return `${stableStringify({
     schemaVersion: baseline.schemaVersion,
     accepted: [...baseline.accepted].sort(),
+    ...(baseline.sources === undefined ? {} : { sources: [...baseline.sources].sort() }),
   })}\n`;
 }
 
-export function baselineFrom(findings: readonly RankedFinding[]): Baseline {
+export function baselineFrom(
+  findings: readonly RankedFinding[],
+  sources?: readonly string[],
+): Baseline {
   return {
     schemaVersion: SCHEMA_VERSION,
     accepted: [...new Set(findings.map((f) => f.finding.fingerprint))].sort(),
+    ...(sources === undefined ? {} : { sources: [...new Set(sources)].sort() }),
   };
 }
 
@@ -78,11 +119,16 @@ export function baselineFrom(findings: readonly RankedFinding[]): Baseline {
 export function applyBaseline(
   findings: readonly RankedFinding[],
   baseline: Baseline,
+  sources?: readonly string[],
 ): AppliedBaseline {
   if (baseline.schemaVersion !== SCHEMA_VERSION) {
     return {
       fresh: [...findings],
       suppressed: [],
+      // Every fingerprint was computed by a different recipe, so "missing"
+      // here would mean "renamed", not "gone".
+      noLongerReported: [],
+      missingSources: [],
       warning:
         `${BASELINE_PATH} was written for schema ${baseline.schemaVersion}, ` +
         `but fingerprints are now schema ${SCHEMA_VERSION}. Every finding is ` +
@@ -94,9 +140,22 @@ export function applyBaseline(
   const fresh: RankedFinding[] = [];
   const suppressed: RankedFinding[] = [];
 
+  const present = new Set<string>();
   for (const finding of findings) {
+    present.add(finding.finding.fingerprint);
     (accepted.has(finding.finding.fingerprint) ? suppressed : fresh).push(finding);
   }
 
-  return { fresh, suppressed };
+  const noLongerReported = [...accepted].filter((f) => !present.has(f)).sort();
+
+  // Only a source that contributed then and not now casts doubt. A scanner
+  // that was absent both times explains nothing, and warning about it would
+  // teach people to skip the line that matters.
+  const ran = new Set(sources ?? []);
+  const missingSources =
+    baseline.sources === undefined || sources === undefined || noLongerReported.length === 0
+      ? []
+      : baseline.sources.filter((tool) => !ran.has(tool));
+
+  return { fresh, suppressed, noLongerReported, missingSources };
 }

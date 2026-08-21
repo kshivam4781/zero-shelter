@@ -107,6 +107,7 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   let findings: ScaFinding[];
   let skipped: string[];
+  let sources: string[] | undefined;
 
   try {
     if (values.input !== undefined && values.input.length > 0) {
@@ -115,10 +116,16 @@ export async function main(argv: readonly string[]): Promise<number> {
       for (const file of values.input) {
         findings.push(...(await readInput(resolve(cwd, file))));
       }
+      // With --input the files are the sources, and which tool wrote each one
+      // is only knowable from what it contains.
+      sources = [
+        ...new Set(findings.flatMap((finding) => finding.sources.map((s) => s.tool))),
+      ].sort();
     } else {
       const collected = await collect({ cwd });
       findings = collected.findings;
       skipped = collected.skipped;
+      sources = collected.contributed;
 
       // Nothing was scanned. Reporting "nothing new to fix" here would be a
       // lie with a zero exit code attached, and in CI it turns a project the
@@ -153,6 +160,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     baseline,
     baselineExists,
     skipped,
+    ...(sources === undefined ? {} : { sources }),
     ...(top === undefined ? {} : { top }),
   });
 
@@ -161,7 +169,11 @@ export async function main(argv: readonly string[]): Promise<number> {
     // so re-running immediately afterwards reports nothing new.
     const all = judge(findings, { baseline: emptyBaseline() });
     await mkdir(dirname(baselinePath), { recursive: true });
-    await writeFile(baselinePath, serializeBaseline(baselineFrom(all.fixNow)), "utf8");
+    await writeFile(
+      baselinePath,
+      serializeBaseline(baselineFrom(all.fixNow, sources)),
+      "utf8",
+    );
     process.stdout.write(
       `recorded ${all.fixNow.length} finding(s) as accepted in ${values.baseline ?? BASELINE_PATH}\n`,
     );

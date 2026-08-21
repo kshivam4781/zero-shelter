@@ -15,6 +15,8 @@ import { rank } from "./triage.js";
 export interface JudgeOptions {
   readonly baseline: Baseline;
   readonly skipped?: readonly string[];
+  /** Scanners that produced a readable report this run. */
+  readonly sources?: readonly string[];
   readonly baselineExists?: boolean;
   /** Cap on how many findings the report asks anyone to act on at once. */
   readonly top?: number;
@@ -26,7 +28,7 @@ export function judge(
 ): JudgeResult {
   const merged = mergeFindings(findings);
   const ranked = rank(merged);
-  const applied = applyBaseline(ranked, options.baseline);
+  const applied = applyBaseline(ranked, options.baseline, options.sources);
 
   const top = options.top ?? Number.POSITIVE_INFINITY;
 
