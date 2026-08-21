@@ -52,6 +52,21 @@ $ npx zero-shelter judge
 Exit code is `1` when anything is new, so CI fails on the regression this change
 introduced rather than on the backlog it inherited.
 
+Fix something and it says so:
+
+```console
+$ npm i minimist@1.2.8
+$ npx zero-shelter judge
+✓ nothing new to fix
+  7 reported → 7 after merge → 0 to fix (100% less noise), 7 already accepted
+  ✓ 2 accepted finding(s) no longer reported — re-record with --update-baseline to drop them
+```
+
+"No longer reported" rather than "fixed", because a finding also disappears
+when the scanner that found it did not run. The baseline records which scanners
+contributed, so when one of them is missing this run, the line says which —
+and when they all ran again, it does not manufacture doubt.
+
 ## Install
 
 Nothing to install. `npx zero-shelter judge` runs it.

@@ -53,6 +53,21 @@ $ npx zero-shelter judge
 새 항목이 있으면 종료 코드가 `1`입니다. CI가 물려받은 백로그가 아니라 **이번
 변경이 들여온 회귀**에서 실패합니다.
 
+고치면 고쳤다고 말해 줍니다.
+
+```console
+$ npm i minimist@1.2.8
+$ npx zero-shelter judge
+✓ nothing new to fix
+  7 reported → 7 after merge → 0 to fix (100% less noise), 7 already accepted
+  ✓ 2 accepted finding(s) no longer reported — re-record with --update-baseline to drop them
+```
+
+"고쳐졌다"가 아니라 **"더 이상 보고되지 않는다"**입니다. 그걸 찾아낸 스캐너가 이번에
+안 돌았을 때도 항목은 사라지니까요. baseline에 어떤 스캐너가 기여했는지 기록해 두고,
+그중 하나가 이번에 안 돌았으면 **어느 것인지 말해 줍니다.** 전부 다시 돌았으면 없는
+의심을 지어내지 않습니다.
+
 ## 설치
 
 설치할 게 없습니다. `npx zero-shelter judge`로 실행됩니다.
