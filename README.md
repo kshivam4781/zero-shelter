@@ -7,9 +7,11 @@ now — and stops telling you about the rest.
 
 Local-first. No LLM at runtime, no network calls of its own, no telemetry.
 
-> **Status: early.** [`zero-shelter@0.0.1`](https://www.npmjs.com/package/zero-shelter)
-> is a preview release — the pipeline runs end to end and is covered by 97 tests
-> on Linux, macOS and Windows. The interface may still change before 0.1.0.
+> **Status: early.** [`zero-shelter`](https://www.npmjs.com/package/zero-shelter)
+> is published as a preview. The pipeline runs end to end, and CI covers it on
+> Linux, macOS and Windows — including installing the packaged tarball and
+> running the tool on this repository itself. The interface may still change
+> before 0.1.0.
 
 ## The problem
 

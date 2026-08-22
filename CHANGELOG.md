@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.0.3
+
+**A second scanner no longer deletes the advice.** npm audit names the version
+it would install; osv-scanner names the release that patched the advisory. The
+merge saw two answers, called it a disagreement and withheld both — so
+installing the second source this project tells everyone to install removed
+every upgrade command from the report. It now reports the highest claimed
+version, which satisfies all of them, and `--explain` shows that they differed.
+
+**The report says what to run.** Seven findings on one package are one upgrade,
+and the report listed them seven times sorted by severity. Now:
+
+```
+npm i lodash@4.18.1   clears 7
+35 finding(s) in 11 package(s) have a published fix but arrive through another
+dependency — package.json "overrides" forces one, at the risk of breaking
+whatever pinned it
+```
+
+Transitive packages are counted rather than commanded: `npm i` on one adds a
+top-level entry and leaves the vulnerable copy alone. In a workspace the report
+says the command needs a `-w`, because hoisting hides which workspace declared
+the range.
+
+**`--top` is a display limit again.** It was deciding what the report claimed:
+`--top 3` on a project with 82 outstanding findings announced "3 to fix (98%
+less noise)". The counts, the percentage and the advice are about the project;
+`--top` decides how many rows are printed.
+
+**pnpm projects work.** The lockfile decides which audit runs, so a
+`pnpm-lock.yaml` no longer ends in "nothing was scanned". yarn works through
+osv-scanner, which reads `yarn.lock`; without it, the run says so and points at
+the shortest way out.
+
+**Merging got fast.** Sibling detection compared every finding with every other
+one: 7,500 findings took a second, and a large tree produces more than that.
+One grouping pass instead — 30ms for the same input, 151ms for 37,400.
+
+**Smaller things.** `zero-shelter hook` hands agents the commands, not just the
+diagnosis, and honours `--baseline`. SARIF alerts carry the remedy into the
+Security tab. `--explain` prints the weights as a table to argue with, and
+names possible duplicates by advisory instead of by fingerprint. A broken
+baseline, an unwritable `--output`, and this tool's own SARIF passed to
+`--input` all get answers instead of stack traces or puzzlement.
+
 ## 0.0.2
 
 **A project nobody scanned no longer reports clean.** In a directory with no
