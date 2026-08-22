@@ -38,6 +38,10 @@ the shortest way out.
 one: 7,500 findings took a second, and a large tree produces more than that.
 One grouping pass instead — 30ms for the same input, 151ms for 37,400.
 
+**Published from CI.** Releases go out through GitHub Actions with OIDC
+trusted publishing — no token exists to leak, and every tarball carries
+provenance tying it to the commit and the run that built it.
+
 **Smaller things.** `zero-shelter hook` hands agents the commands, not just the
 diagnosis, and honours `--baseline`. SARIF alerts carry the remedy into the
 Security tab. `--explain` prints the weights as a table to argue with, and
