@@ -176,7 +176,7 @@ function actionBlock(
       `<li class="command${index === 0 ? " command--lead" : ""}">` +
       `<code>${escape(action.command)}</code>` +
       (action.clears > 1 ? `<span class="clears">${escape(t.clears(action.clears))}</span>` : "") +
-      `<button class="copy" type="button" data-copy="${escape(action.command)}" data-copied="${escape(t.copied)}">${escape(t.copy)}</button>` +
+      `<button class="copy" type="button" data-copy="${escape(action.command)}" data-copied="${escape(t.copied)}" data-select="${escape(t.selected)}">${escape(t.copy)}</button>` +
       "</li>",
   );
 
@@ -231,7 +231,7 @@ function promptBlock(
     (prompt) =>
       '<li class="prompt">' +
       `<p>${escape(prompt)}</p>` +
-      `<button class="copy" type="button" data-copy="${escape(prompt)}" data-copied="${escape(t.copied)}">${escape(t.copy)}</button>` +
+      `<button class="copy" type="button" data-copy="${escape(prompt)}" data-copied="${escape(t.copied)}" data-select="${escape(t.selected)}">${escape(t.copy)}</button>` +
       "</li>",
   );
 
@@ -500,7 +500,7 @@ const STYLE = `
   --sheet: oklch(100% 0 0);
   --ink: oklch(24% 0.012 75);
   --ink-soft: oklch(48% 0.012 75);
-  --ink-faint: oklch(66% 0.010 75);
+  --ink-faint: oklch(56.5% 0.010 75);
   --rule: oklch(89% 0.008 75);
   --rule-strong: oklch(72% 0.010 75);
   --accent: oklch(52% 0.126 62);
@@ -513,7 +513,7 @@ body:has(#dark:checked) {
   --sheet: oklch(20.5% 0.009 75);
   --ink: oklch(92% 0.008 80);
   --ink-soft: oklch(74% 0.010 80);
-  --ink-faint: oklch(58% 0.010 80);
+  --ink-faint: oklch(60% 0.010 80);
   --rule: oklch(31% 0.010 75);
   --rule-strong: oklch(45% 0.012 75);
   --accent: oklch(78% 0.122 68);
@@ -527,7 +527,7 @@ body:has(#dark:checked) {
     --sheet: oklch(20.5% 0.009 75);
     --ink: oklch(92% 0.008 80);
     --ink-soft: oklch(74% 0.010 80);
-    --ink-faint: oklch(58% 0.010 80);
+    --ink-faint: oklch(60% 0.010 80);
     --rule: oklch(31% 0.010 75);
     --rule-strong: oklch(45% 0.012 75);
     --accent: oklch(78% 0.122 68);
@@ -540,7 +540,7 @@ body:has(#dark:checked) {
     --sheet: oklch(100% 0 0);
     --ink: oklch(24% 0.012 75);
     --ink-soft: oklch(48% 0.012 75);
-    --ink-faint: oklch(66% 0.010 75);
+    --ink-faint: oklch(56.5% 0.010 75);
     --rule: oklch(89% 0.008 75);
     --rule-strong: oklch(72% 0.010 75);
     --accent: oklch(52% 0.126 62);
@@ -705,16 +705,47 @@ details[open] summary { color: var(--ink-soft); }
 
 // Progressive: every command is selectable text without this, and the button
 // simply does nothing if clipboard access is refused.
+// This page is usually opened from disk, where the clipboard API is refused or
+// missing depending on the browser. A button that silently does nothing is
+// worse than no button, so there is a fallback, and when even that fails the
+// text gets selected so ctrl-C still works.
 const SCRIPT = `<script>
 document.querySelectorAll(".copy").forEach(function (button) {
   button.addEventListener("click", function () {
     var text = button.getAttribute("data-copy");
-    if (!navigator.clipboard) return;
-    navigator.clipboard.writeText(text).then(function () {
+    var done = function () {
       var label = button.textContent;
       button.textContent = button.getAttribute("data-copied");
       setTimeout(function () { button.textContent = label; }, 1200);
-    });
+    };
+
+    var legacy = function () {
+      var field = document.createElement("textarea");
+      field.value = text;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.appendChild(field);
+      field.select();
+      var copied = false;
+      try { copied = document.execCommand("copy"); } catch (error) { copied = false; }
+      document.body.removeChild(field);
+      if (copied) { done(); return; }
+
+      var source = button.previousElementSibling || button.parentElement;
+      var range = document.createRange();
+      range.selectNodeContents(source);
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      button.textContent = button.getAttribute("data-select");
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, legacy);
+    } else {
+      legacy();
+    }
   });
 });
 </script>`;
