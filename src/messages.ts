@@ -27,6 +27,14 @@ export interface Messages {
   readonly sourcesNone: string;
 
   readonly actNow: string;
+  readonly actNowHow: string;
+  readonly promptsHeading: string;
+  readonly promptsHow: string;
+  readonly promptFix: (commands: string) => string;
+  readonly promptOverrides: (packages: string) => string;
+  readonly promptUnfixable: (packages: string) => string;
+  readonly glossary: string;
+  readonly glossaryTerms: readonly (readonly [string, string])[];
   readonly actNowEmpty: string;
   readonly clears: (count: number) => string;
   readonly copy: string;
@@ -38,6 +46,7 @@ export interface Messages {
   readonly transitiveRisk: string;
 
   readonly ledger: string;
+  readonly ledgerHow: string;
   readonly colSeverity: string;
   readonly colPackage: string;
   readonly colAdvisory: string;
@@ -90,6 +99,27 @@ const EN: Messages = {
   sourcesNone: "No scanner produced a report.",
 
   actNow: "Run this",
+  actNowHow:
+    "Each line upgrades one package and clears the findings counted beside it. Run them in this order; the first clears the most.",
+  promptsHeading: "Or hand it to an agent",
+  promptsHow: "Copy one of these into a coding agent. Each ends by re-judging, so the claim gets checked rather than assumed.",
+  promptFix: (commands) =>
+    `Upgrade these dependencies and confirm the result: ${commands}. Then run \`npx zero-shelter judge\` again and tell me what it says. Do not run --update-baseline, and do not report success from npm audit — it does not know this project's baseline.`,
+  promptOverrides: (packages) =>
+    `These packages have a published fix but arrive through another dependency: ${packages}. Show me what a package.json "overrides" entry would look like for them, and say which parent package pinned each old version and what could break. Do not apply it yet.`,
+  promptUnfixable: (packages) =>
+    `These have no published fix: ${packages}. For each, check whether the vulnerable code path is reachable from this project's own code, and say plainly when you cannot tell.`,
+  glossary: "What the numbers mean",
+  glossaryTerms: [
+    ["reported", "Findings the scanners handed over, before anything was reconciled."],
+    ["after merge", "What is left once findings that describe the same vulnerability under different names are joined."],
+    ["outstanding", "Merged findings that are not recorded in the baseline. This is the number that matters."],
+    ["already accepted", "Recorded in .zero-shelter/baseline.json and deliberately not listed. Accepting is a decision about risk, not a way to make output quiet."],
+    ["no longer reported", "Accepted findings that produced nothing this run. Not the same as fixed: a finding also disappears when the scanner that found it did not run."],
+    ["severity", "Five blocks for critical, one for info. The blocks carry the rank so it survives without colour."],
+    ["direct / indirect", "Direct means this project declares the package. Indirect means it arrives through something else, and `npm i` will not fix it."],
+    ["score", "Our ranking, not a CVSS number. Every point comes from the weights table under the ledger, and you can argue with a row."],
+  ],
   actNowEmpty: "No published fix applies to a direct dependency yet.",
   clears: (count) => `clears ${count}`,
   copy: "Copy",
@@ -103,6 +133,8 @@ const EN: Messages = {
   transitiveRisk: "This overrides what a parent package pinned, which can break it.",
 
   ledger: "Every finding",
+  ledgerHow:
+    "Worst first. Open a row to see how its score was reached, which identifiers it was merged from, and what it might duplicate.",
   colSeverity: "Severity",
   colPackage: "Package",
   colAdvisory: "Advisory",
@@ -162,6 +194,27 @@ const KO: Messages = {
   sourcesNone: "리포트를 낸 스캐너가 없습니다.",
 
   actNow: "이걸 실행하세요",
+  actNowHow:
+    "각 줄은 패키지 하나를 올리고, 옆에 적힌 수만큼 항목이 사라집니다. 위에서부터 실행하세요 — 첫 줄이 가장 많이 해결합니다.",
+  promptsHeading: "에이전트에게 시키려면",
+  promptsHow: "코딩 에이전트에 그대로 붙여 넣으세요. 전부 마지막에 재판정으로 끝나므로, 됐다고 가정하지 않고 확인합니다.",
+  promptFix: (commands) =>
+    `다음 의존성을 올리고 결과를 확인해줘: ${commands}. 그다음 \`npx zero-shelter judge\`를 다시 실행해서 뭐라고 나오는지 알려줘. --update-baseline은 실행하지 말고, npm audit 결과로 성공을 보고하지 마 — 그건 이 프로젝트의 baseline을 모른다.`,
+  promptOverrides: (packages) =>
+    `이 패키지들은 수정 버전이 있지만 다른 의존성을 통해 들어와: ${packages}. package.json "overrides" 항목이 어떻게 되는지 보여주고, 각각 어느 상위 패키지가 옛 버전을 고정했는지와 뭐가 깨질 수 있는지 말해줘. 아직 적용하지는 마.`,
+  promptUnfixable: (packages) =>
+    `이건 공개된 수정 버전이 없어: ${packages}. 각각에 대해 취약한 코드 경로가 이 프로젝트 코드에서 실제로 도달 가능한지 확인하고, 판단할 수 없으면 없다고 분명히 말해줘.`,
+  glossary: "숫자가 뜻하는 것",
+  glossaryTerms: [
+    ["원시 보고", "스캐너가 넘긴 그대로의 항목 수. 아직 아무것도 맞대지 않은 상태입니다."],
+    ["병합 후", "같은 취약점을 다른 이름으로 부르던 것들을 이은 뒤 남은 수."],
+    ["미해결", "baseline에 기록되지 않은 병합 후 항목. 이게 실제로 중요한 숫자입니다."],
+    ["이미 수용", ".zero-shelter/baseline.json에 기록되어 목록에서 빠진 것. 수용은 위험에 대한 판단이지 출력을 조용하게 만드는 방법이 아닙니다."],
+    ["더 이상 보고되지 않음", "수용했던 항목이 이번 실행에서 안 나온 것. 고쳐진 것과 같지 않습니다 — 그걸 찾아낸 스캐너가 안 돌았을 때도 사라집니다."],
+    ["심각도", "critical은 블록 다섯, info는 하나. 색이 없어도 순위가 남도록 블록이 등급을 전달합니다."],
+    ["직접 / 간접", "직접은 이 프로젝트가 선언한 패키지, 간접은 다른 것을 통해 들어온 것입니다. 간접은 `npm i`로 안 고쳐집니다."],
+    ["점수", "CVSS가 아니라 우리 랭킹입니다. 모든 점수는 원장 아래 가중치 표에서 나오고, 행 단위로 따질 수 있습니다."],
+  ],
   actNowEmpty: "직접 의존성에 적용되는 공개된 수정 버전이 아직 없습니다.",
   clears: (count) => `${count}건 해결`,
   copy: "복사",
@@ -175,6 +228,8 @@ const KO: Messages = {
   transitiveRisk: "상위 패키지가 고정한 버전을 덮어쓰므로 그쪽이 깨질 수 있습니다.",
 
   ledger: "전체 판정 내역",
+  ledgerHow:
+    "심각한 것부터. 행을 펼치면 그 점수가 어떻게 나왔는지, 어떤 식별자들이 합쳐진 것인지, 무엇과 중복일 수 있는지 나옵니다.",
   colSeverity: "심각도",
   colPackage: "패키지",
   colAdvisory: "권고",
