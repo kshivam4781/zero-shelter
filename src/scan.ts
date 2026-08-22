@@ -121,9 +121,9 @@ export async function collect(options: ScanOptions): Promise<Collected> {
   // successful scan telling the reader we could not read their project.
   if (contributed.length === 0 && existsSync(join(options.cwd, "yarn.lock"))) {
     skipped.push(
-      "yarn.lock found and nothing could read it: yarn v1 writes NDJSON, which " +
-        "this tool does not parse. osv-scanner does read yarn.lock — installing it " +
-        "is the shortest path — or generate a package-lock.json with " +
+      "yarn.lock found and nothing could read it. yarn v1 writes NDJSON, which " +
+        "this tool does not parse. osv-scanner reads yarn.lock, so installing it " +
+        "is the shortest way out. Or generate a package-lock.json with " +
         "`npm i --package-lock-only`",
     );
   }
@@ -221,8 +221,8 @@ async function runOsvScanner(options: ScanOptions): Promise<Attempt> {
     return {
       ok: false,
       reason:
-        "not on PATH — a second source is where most of the deduplication comes " +
-        "from. brew install osv-scanner, or " +
+        "not on PATH. Most of the deduplication comes from having a second " +
+        "source: brew install osv-scanner, or " +
         "https://github.com/google/osv-scanner/releases",
     };
   }

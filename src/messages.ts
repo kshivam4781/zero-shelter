@@ -31,6 +31,7 @@ export interface Messages {
   readonly promptsHeading: string;
   readonly promptsHow: string;
   readonly promptFix: (commands: string) => string;
+  readonly promptFixWorkspace: (commands: string) => string;
   readonly promptOverrides: (packages: string) => string;
   readonly promptUnfixable: (packages: string) => string;
   readonly glossary: string;
@@ -105,6 +106,8 @@ const EN: Messages = {
   promptsHow: "Copy one of these into a coding agent. Each ends by re-judging, so the claim gets checked rather than assumed.",
   promptFix: (commands) =>
     `Upgrade these dependencies and confirm the result: ${commands}. Then run \`npx zero-shelter judge\` again and tell me what it says. Do not run --update-baseline, and do not report success from npm audit — it does not know this project's baseline.`,
+  promptFixWorkspace: (commands) =>
+    `This is a workspace root. Upgrade these dependencies in whichever workspace declares them, with npm i -w <workspace>: ${commands}. Find the declaring package.json first rather than guessing, then run \`npx zero-shelter judge\` again and tell me what it says. Do not run --update-baseline.`,
   promptOverrides: (packages) =>
     `These packages have a published fix but arrive through another dependency: ${packages}. Show me what a package.json "overrides" entry would look like for them, and say which parent package pinned each old version and what could break. Do not apply it yet.`,
   promptUnfixable: (packages) =>
@@ -200,6 +203,8 @@ const KO: Messages = {
   promptsHow: "코딩 에이전트에 그대로 붙여 넣으세요. 전부 마지막에 재판정으로 끝나므로, 됐다고 가정하지 않고 확인합니다.",
   promptFix: (commands) =>
     `다음 의존성을 올리고 결과를 확인해줘: ${commands}. 그다음 \`npx zero-shelter judge\`를 다시 실행해서 뭐라고 나오는지 알려줘. --update-baseline은 실행하지 말고, npm audit 결과로 성공을 보고하지 마 — 그건 이 프로젝트의 baseline을 모른다.`,
+  promptFixWorkspace: (commands) =>
+    `여기는 워크스페이스 루트야. 이 의존성들을 선언한 워크스페이스에서 npm i -w <workspace>로 올려줘: ${commands}. 어느 package.json이 선언했는지 먼저 찾고 추측하지 마. 그다음 \`npx zero-shelter judge\`를 다시 실행해서 뭐라고 나오는지 알려줘. --update-baseline은 실행하지 마.`,
   promptOverrides: (packages) =>
     `이 패키지들은 수정 버전이 있지만 다른 의존성을 통해 들어와: ${packages}. package.json "overrides" 항목이 어떻게 되는지 보여주고, 각각 어느 상위 패키지가 옛 버전을 고정했는지와 뭐가 깨질 수 있는지 말해줘. 아직 적용하지는 마.`,
   promptUnfixable: (packages) =>

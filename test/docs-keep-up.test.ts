@@ -23,6 +23,7 @@ const docs = {
   "skills/explain/SKILL.md": read("skills/explain/SKILL.md"),
   "skills/fix/SKILL.md": read("skills/fix/SKILL.md"),
   "skills/ci/SKILL.md": read("skills/ci/SKILL.md"),
+  "skills/baseline/SKILL.md": read("skills/baseline/SKILL.md"),
   "AGENTS.md": read("AGENTS.md"),
 };
 
@@ -83,7 +84,7 @@ describe("the docs describe the tool that exists", () => {
 
   it("keeps every shipped skill described in both READMEs", () => {
     // A skill nobody is told about is a skill nobody invokes.
-    for (const skill of ["setup", "explain", "fix", "ci"]) {
+    for (const skill of ["setup", "explain", "fix", "baseline", "ci"]) {
       expect(docs["README.md"], `README.md never mentions ${skill}`).toContain(
         `zero-shelter:${skill}`,
       );

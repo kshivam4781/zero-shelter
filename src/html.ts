@@ -69,6 +69,7 @@ export function renderHtml(result: JudgeResult, options: HtmlOptions): string {
                   .map((entry) => entry.finding.packageName),
               ),
             ].slice(0, 8),
+            result.workspaceRoot === true,
             t,
           ),
           indirect.length > 0 ? transitiveBlock(indirect, t) : "",
@@ -202,12 +203,19 @@ function promptBlock(
   actions: readonly UpgradeAction[],
   indirect: readonly TransitiveFix[],
   unfixable: readonly string[],
+  workspaceRoot: boolean,
   t: ReturnType<typeof messagesFor>,
 ): string {
   const prompts: string[] = [];
 
   if (actions.length > 0) {
-    prompts.push(t.promptFix(actions.map((action) => `${action.packageName}@${action.upgradeTo}`).join(", ")));
+    const packages = actions
+      .map((action) => `${action.packageName}@${action.upgradeTo}`)
+      .join(", ");
+    // In a workspace the plain command lands in the root package, so the
+    // prompt has to send the agent looking for the package.json that declared
+    // the range rather than pasting what the report printed.
+    prompts.push(workspaceRoot ? t.promptFixWorkspace(packages) : t.promptFix(packages));
   }
   if (indirect.length > 0) {
     prompts.push(

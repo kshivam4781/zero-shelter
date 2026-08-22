@@ -186,13 +186,15 @@ describe("finding the action", () => {
   });
 
   it("asks about reachability for findings with no fix, and claims nothing", () => {
-    const unfixable = renderHtml(
-      judge(
-        findings.map((entry) => ({ ...entry, fixedIn: undefined, fixAvailable: false })),
-        { baseline: emptyBaseline() },
-      ),
-      { language: "en" },
-    );
+    // Strip the fix rather than setting it to undefined: the finding type
+    // distinguishes "absent" from "present and undefined".
+    const withoutFixes = findings.map(({ fixedIn: _dropped, ...rest }) => ({
+      ...rest,
+      fixAvailable: false,
+    })) as ScaFinding[];
+    const unfixable = renderHtml(judge(withoutFixes, { baseline: emptyBaseline() }), {
+      language: "en",
+    });
 
     expect(unfixable).toContain("no published fix");
     expect(unfixable).toContain("say plainly when you cannot tell");

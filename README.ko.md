@@ -165,8 +165,9 @@ $ npx zero-shelter judge --format html --output report.html
 /plugin install zero-shelter@zero-shelter
 ```
 
-스킬 네 개입니다. `/zero-shelter:setup`은 첫 스캔, `/zero-shelter:explain`은 결과
-해석, `/zero-shelter:fix`는 업그레이드를 적용하고 **재판정으로 확인**까지, 
+스킬 다섯 개입니다. `/zero-shelter:setup`은 첫 스캔, `/zero-shelter:explain`은 결과
+해석, `/zero-shelter:fix`는 업그레이드를 적용하고 **재판정으로 확인**까지,
+`/zero-shelter:baseline`은 무엇을 수용할지 판단하고 수용 목록을 정직하게 유지하고,
 `/zero-shelter:ci`는 파이프라인에 게이트를 붙입니다 — baseline을 먼저 잡아서, 물려받은
 백로그가 아니라 이번 변경이 들여온 것에서 빌드가 실패하도록.
 
