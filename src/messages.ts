@@ -40,6 +40,7 @@ export interface Messages {
   readonly clears: (count: number) => string;
   readonly copy: string;
   readonly copied: string;
+  readonly selected: string;
   readonly workspaceCaveat: string;
 
   readonly transitive: (findings: number, packages: number) => string;
@@ -127,6 +128,7 @@ const EN: Messages = {
   clears: (count) => `clears ${count}`,
   copy: "Copy",
   copied: "Copied",
+  selected: "Selected — press ctrl-C",
   workspaceCaveat:
     "Workspace root: add -w <workspace> so the version lands in the package that declares it. Hoisting hides which one from the scanners.",
 
@@ -224,6 +226,7 @@ const KO: Messages = {
   clears: (count) => `${count}건 해결`,
   copy: "복사",
   copied: "복사됨",
+  selected: "선택됨 — ctrl-C를 누르세요",
   workspaceCaveat:
     "워크스페이스 루트입니다. 취약 범위를 선언한 패키지에 버전이 들어가도록 -w <workspace>를 붙이세요. hoisting 때문에 어느 워크스페이스인지는 스캐너가 알려주지 못합니다.",
 
