@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -10,6 +10,7 @@ import {
   serializeBaseline,
 } from "./baseline.js";
 import { judge } from "./judge.js";
+import type { JudgeResult } from "./report.js";
 import { parseNpmAudit } from "./ingest/npm-audit.js";
 import { parseOsv } from "./ingest/osv.js";
 import { collect, isWorkspaceRoot } from "./scan.js";
@@ -18,6 +19,15 @@ import { colorEnabled, renderExplain, renderHuman, renderJson } from "./report.j
 import { renderHtml } from "./html.js";
 import { isLanguage } from "./messages.js";
 import { renderSarif } from "./sarif.js";
+import {
+  HISTORY_PATH,
+  type Change,
+  changes,
+  entryFrom,
+  parseHistory,
+  serializeEntry,
+  stale,
+} from "./history.js";
 import type { ScaFinding } from "./finding.js";
 import { versionOutput } from "./version.js";
 
@@ -35,6 +45,7 @@ const USAGE = `zero-shelter judge — decide which dependency findings to fix no
   --output <file>       write to a file instead of stdout
   --explain             show how each score was reached
   --top <n>             report at most n findings
+  --record              append this run to .zero-shelter/history.jsonl
   --update-baseline     record the current findings as accepted and exit 0
   --baseline <file>     baseline location (default ${BASELINE_PATH})
   --cwd <dir>           project directory (default .)
@@ -43,6 +54,11 @@ const USAGE = `zero-shelter judge — decide which dependency findings to fix no
 
 Exit code is 1 when there is anything new to fix, so CI fails on regressions
 rather than on the backlog it inherited.
+
+  npx zero-shelter history [--json] [--last <n>]
+
+  What has happened to this project's findings, from the recorded runs. Says
+  what appeared and what stopped being reported between them.
 
   npx zero-shelter hook
 
@@ -67,6 +83,8 @@ export async function main(argv: readonly string[]): Promise<number> {
         explain: { type: "boolean" },
         top: { type: "string" },
         "update-baseline": { type: "boolean" },
+        record: { type: "boolean" },
+        last: { type: "string" },
         baseline: { type: "string" },
         cwd: { type: "string" },
         version: { type: "boolean" },
@@ -92,6 +110,9 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const command = positionals[0] ?? "judge";
   if (command === "hook") return await hook(values.cwd, values.baseline);
+  if (command === "history") {
+    return await history(resolve(values.cwd ?? "."), values.json === true, values.last);
+  }
   if (command !== "judge") {
     process.stderr.write(`unknown command: ${command}\n\n${USAGE}`);
     return 2;
@@ -209,6 +230,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   } else if (format === "html") {
     rendered = renderHtml(result, {
       language,
+      ...(await recordedRuns(cwd)),
       ...(values.stamp === undefined ? {} : { stamp: values.stamp }),
       command: `zero-shelter ${argv.join(" ")}`,
     });
@@ -221,6 +243,14 @@ export async function main(argv: readonly string[]): Promise<number> {
     rendered =
       `${renderHuman(result, color)}\n` +
       (values.explain === true ? `\n${renderExplain(result)}\n` : "");
+  }
+
+  if (values.record === true) {
+    const written = await record(cwd, result);
+    if (written !== undefined) {
+      process.stderr.write(`${written}\n`);
+      return 2;
+    }
   }
 
   if (values.output === undefined) {
@@ -313,6 +343,134 @@ async function readInput(path: string): Promise<ScaFinding[]> {
   throw new Error(
     `${path}: unrecognised report. Expected npm audit (vulnerabilities) or osv-scanner (results).`,
   );
+}
+
+/**
+ * Recorded runs for the report, or nothing when none were recorded.
+ *
+ * Reading this must never be able to fail a judgement: an unreadable history
+ * costs the page one section.
+ */
+async function recordedRuns(cwd: string): Promise<{ history?: Change[] }> {
+  try {
+    const raw = await readFile(resolve(cwd, HISTORY_PATH), "utf8");
+    const { entries } = parseHistory(raw);
+    return entries.length === 0 ? {} : { history: changes(entries) };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Append one line describing this run.
+ *
+ * Returns a message when it could not, rather than throwing: a history that
+ * cannot be written is worth saying out loud, but it is not a reason to
+ * discard a judgement someone is waiting for.
+ */
+async function record(cwd: string, result: JudgeResult): Promise<string | undefined> {
+  const path = resolve(cwd, HISTORY_PATH);
+  try {
+    await mkdir(dirname(path), { recursive: true });
+    // The only clock in the tool. Everything else stays reproducible; a history
+    // without time answers none of the questions it exists for.
+    await appendFile(path, serializeEntry(entryFrom(result, new Date().toISOString())), "utf8");
+    return undefined;
+  } catch (error) {
+    return `cannot write ${path}: ${reasonFor(error)}`;
+  }
+}
+
+/**
+ * `zero-shelter history` — what happened, in the order it happened.
+ */
+async function history(cwd: string, asJson: boolean, last: string | undefined): Promise<number> {
+  const path = resolve(cwd, HISTORY_PATH);
+
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      process.stderr.write(
+        `no history at ${path}\n` +
+          "Run `zero-shelter judge --record` to start one. Nothing is recorded unless asked.\n",
+      );
+      return 2;
+    }
+    process.stderr.write(`cannot read ${path}: ${reasonFor(error)}\n`);
+    return 2;
+  }
+
+  const { entries, unreadable } = parseHistory(raw);
+  if (entries.length === 0) {
+    process.stderr.write(`${path} has no readable entries\n`);
+    return 2;
+  }
+
+  const limit = last === undefined ? entries.length : Number(last);
+  if (!Number.isInteger(limit) || limit < 1) {
+    process.stderr.write(`--last expects a positive integer, got ${last}\n`);
+    return 2;
+  }
+
+  const all = changes(entries);
+  const shown = all.slice(Math.max(0, all.length - limit));
+
+  if (asJson) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          entries: entries.length,
+          unreadable,
+          staleSchema: stale(entries),
+          runs: shown.map((change) => ({
+            at: change.entry.at,
+            outstanding: change.entry.outstanding.length,
+            accepted: change.entry.accepted,
+            appeared: change.appeared.length,
+            gone: change.gone.length,
+            sources: change.entry.sources,
+          })),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return 0;
+  }
+
+  const lines = shown.map((change) => {
+    const deltas = [
+      change.appeared.length > 0 ? `+${change.appeared.length}` : "",
+      change.gone.length > 0 ? `-${change.gone.length}` : "",
+    ]
+      .filter((part) => part !== "")
+      .join(" ");
+
+    return (
+      `  ${change.entry.at}  ` +
+      `${String(change.entry.outstanding.length).padStart(4)} outstanding  ` +
+      `${deltas.padEnd(9)}` +
+      `${change.entry.accepted > 0 ? `${change.entry.accepted} accepted` : ""}`
+    ).trimEnd();
+  });
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+
+  if (unreadable > 0) {
+    process.stdout.write(
+      `  ${unreadable} line(s) could not be read and were skipped. An interrupted write leaves one.\n`,
+    );
+  }
+  const outdated = stale(entries);
+  if (outdated > 0) {
+    process.stdout.write(
+      `  ${outdated} entry(s) predate the current fingerprint schema; their appeared/gone counts are not comparable.\n`,
+    );
+  }
+
+  return 0;
 }
 
 /**

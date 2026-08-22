@@ -120,3 +120,38 @@ describe("the html report", () => {
     expect(page).toContain("direct dependency");
   });
 });
+
+describe("recorded runs in the report", () => {
+  const entry = (at: string, outstanding: string[]) => ({
+    entry: { v: "1", at, sources: ["npm-audit"], raw: 1, merged: 1, accepted: 0, outstanding },
+    appeared: [] as string[],
+    gone: [] as string[],
+  });
+
+  it("appears only once there is something to compare", () => {
+    // One data point is a decoration, not a trend.
+    const single = renderHtml(result, {
+      language: "en",
+      history: [entry("2026-08-01T00:00:00.000Z", ["a"])],
+    });
+    expect(single).not.toContain('class="history"');
+
+    const pair = renderHtml(result, {
+      language: "en",
+      history: [entry("2026-08-01T00:00:00.000Z", ["a"]), entry("2026-08-02T00:00:00.000Z", [])],
+    });
+    expect(pair).toContain('class="history"');
+    expect(pair).toContain("2026-08-02");
+  });
+
+  it("takes its dates from the data, never from a clock", () => {
+    const history = [
+      entry("2026-08-01T00:00:00.000Z", ["a"]),
+      entry("2026-08-02T00:00:00.000Z", []),
+    ];
+
+    expect(renderHtml(result, { language: "en", history })).toBe(
+      renderHtml(result, { language: "en", history }),
+    );
+  });
+});

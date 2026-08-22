@@ -17,9 +17,15 @@ import type { JudgeResult } from "./report.js";
 import { WEIGHTS } from "./triage.js";
 import { type Language, messagesFor } from "./messages.js";
 import type { MergedFinding } from "./merge.js";
+import type { Change } from "./history.js";
 
 export interface HtmlOptions {
   readonly language: Language;
+  /**
+   * Recorded runs, oldest first. Absent when nothing was recorded — an empty
+   * chart of one data point is a decoration, not information.
+   */
+  readonly history?: readonly Change[];
   /** Printed verbatim in the footer. Omitted entirely when absent. */
   readonly stamp?: string;
   /** The command that produced this page, for the reproduce section. */
@@ -52,6 +58,9 @@ export function renderHtml(result: JudgeResult, options: HtmlOptions): string {
           ledger(result, t),
         ].join("\n"),
     closing(result, t),
+    options.history === undefined || options.history.length < 2
+      ? ""
+      : historyBlock(options.history, t),
     footer(options, t),
   ]
     .filter((section) => section !== "")
@@ -322,6 +331,48 @@ function closing(result: JudgeResult, t: ReturnType<typeof messagesFor>): string
   return parts.join("\n");
 }
 
+/**
+ * The recorded runs, as a row per run.
+ *
+ * Bars rather than a line chart: the question is "is this going up or down",
+ * and a bar someone can read the number off answers it without a drawing that
+ * implies precision we do not have between two points.
+ */
+function historyBlock(history: readonly Change[], t: ReturnType<typeof messagesFor>): string {
+  const recent = history.slice(-12);
+  const peak = Math.max(...recent.map((change) => change.entry.outstanding.length), 1);
+
+  const rows = recent.map((change) => {
+    const count = change.entry.outstanding.length;
+    const width = Math.round((count / peak) * 100);
+    const deltas = [
+      change.appeared.length > 0
+        ? `<span class="delta up">+${escape(String(change.appeared.length))}</span>`
+        : "",
+      change.gone.length > 0
+        ? `<span class="delta down">−${escape(String(change.gone.length))}</span>`
+        : "",
+    ].join("");
+
+    return (
+      '<li class="run">' +
+      `<span class="when"><time datetime="${escape(change.entry.at)}">${escape(change.entry.at.slice(0, 10))}</time></span>` +
+      `<span class="bar"><span style="width:${escape(String(width))}%"></span></span>` +
+      `<span class="run-count">${escape(String(count))}</span>` +
+      `<span class="run-delta">${deltas}</span>` +
+      "</li>"
+    );
+  });
+
+  return [
+    '<section class="history">',
+    `<h2>${escape(t.history)}</h2>`,
+    `<ol class="runs">${rows.join("")}</ol>`,
+    `<p class="quiet small">${escape(t.historyNote)}</p>`,
+    "</section>",
+  ].join("\n");
+}
+
 function footer(options: HtmlOptions, t: ReturnType<typeof messagesFor>): string {
   return [
     '<footer class="bottom">',
@@ -522,6 +573,19 @@ details[open] summary { color: var(--ink-soft); }
 .reasons li, .weights li { display: flex; gap: 12px; padding: 2px 0; color: var(--ink-soft); }
 .reasons .num, .weights .num { min-width: 34px; text-align: right; color: var(--ink); }
 .weights { margin-top: 18px; }
+
+.history { margin-top: 44px; max-width: 78ch; }
+.runs { list-style: none; margin: 0; padding: 0; }
+.run { display: grid; grid-template-columns: 92px minmax(0, 1fr) 44px 72px; gap: 14px; align-items: center; padding: 5px 0; font-size: 13px; }
+.when { color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.bar { background: var(--paper); height: 14px; border: 1px solid var(--rule); }
+.bar > span { display: block; height: 100%; background: var(--mark); }
+.run:last-child .bar > span { background: var(--accent); }
+.run-count { text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.run-delta { display: flex; gap: 8px; font-size: 12px; }
+.delta.up { color: var(--ink); }
+.delta.down { color: var(--ink-faint); }
+.small { font-size: 12px; margin-top: 12px; }
 
 .quiet-block { margin-top: 40px; max-width: 74ch; }
 .quiet-block p { margin: 0 0 6px; color: var(--ink-soft); }

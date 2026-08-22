@@ -128,6 +128,23 @@ yarn은 `osv-scanner`로 됩니다 — 그쪽이 `yarn.lock`을 직접 읽습니
 요청하지도 않은 보안 리포트 때문에 남의 작업 세션이 끊기는 건 아무 말도 안 하는
 것보다 나쁩니다. [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md)를 보세요.
 
+## 여기서 무슨 일이 있었나
+
+```console
+$ npx zero-shelter judge --record     # .zero-shelter/history.jsonl에 한 줄 덧붙임
+$ npx zero-shelter history
+  2026-08-20T09:14:02.118Z    9 outstanding  +9
+  2026-08-21T11:02:55.700Z    7 outstanding  -2
+  2026-08-22T08:31:10.042Z   10 outstanding  +3
+```
+
+요청한 실행만 기록합니다. 파일은 JSONL이라 `tail`로 읽히고 PR에서 diff가 되며,
+개수가 아니라 **지문**을 담습니다. 개수만으로는 "2건 고치고 2건 생김"과 "아무 일도
+없음"을 구분할 수 없기 때문입니다.
+
+**"고쳐졌다"가 아니라 "더 이상 보고되지 않음"**입니다. baseline에 수용됐을 때도,
+그걸 찾아낸 스캐너가 안 돌았을 때도 목록에서 빠집니다.
+
 ## 사람이 보는 리포트
 
 ```console
