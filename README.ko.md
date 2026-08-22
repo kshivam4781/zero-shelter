@@ -192,6 +192,18 @@ $ npx zero-shelter judge --format html --output report.html
 `--explain`은 부여된 점수와 그 근거가 된 가중치 표를 전부 출력합니다. 랭킹을
 **믿는 대신 따질 수 있게** 하려는 것입니다.
 
+## 예상과 다른 말이 나올 때
+
+| 이렇게 나오면 | 무슨 일인가 |
+|---|---|
+| `cannot judge …: no scanner produced a report` | 아무것도 스캔하지 못했고, 통과인 척하지 않고 exit 2로 끝냅니다. 보통 lockfile이 없는 경우: `npm i --package-lock-only` |
+| `yarn.lock found and nothing could read it` | yarn v1은 NDJSON으로 쓰는데 우리가 파싱하지 않습니다. `osv-scanner`가 `yarn.lock`을 직접 읽으므로 그게 최단 경로입니다 |
+| `zero-shelter needs Node 20 or later` | 그 자체가 문제이고, 우회하는 플래그는 없습니다 |
+| `osv-scanner skipped: not on PATH` | 선택 사항이고 실행은 정상입니다. 다만 중복 제거의 대부분이 거기서 나옵니다 |
+| `… is SARIF, which is what this tool writes rather than reads` | `--input`은 스캐너 리포트를 받습니다. 우리 출력이 아니라 |
+| baseline에 대한 `… is not valid JSON` | 중단된 `--update-baseline`이 잘린 파일을 남깁니다. 지우고 다시 기록하세요 |
+| `first run — record these as accepted` | baseline이 아직 없어서 백로그 전체를 보고 중입니다. `--update-baseline`이 그걸 위한 것입니다 |
+
 ## 바뀌지 않는 설계 원칙
 
 이건 안 바뀝니다. 하나라도 깨는 패치는 그 이유만으로 반려됩니다.
@@ -250,6 +262,7 @@ CI가 Ubuntu·macOS·Windows에서 테스트를 돌리며 고정된 해시값을
 
 - [아키텍처](./docs/architecture.md) — 레이어, 시퀀스 다이어그램, 어디에 추가하나
 - [v1 범위](./docs/v1-scope.md) — 무엇이 들어가고 무엇이 미뤄졌으며 왜인가
+- [AGENTS.md](./AGENTS.md) — 이 도구를 쓰는 저장소에서 일하는 에이전트가 알아야 할 것
 - [에이전트 훅](./docs/AGENT-HOOK.md) — 설정과, 의도적으로 하지 않는 것
 - [벤치마크](./bench/README.md) — 고정 대상, 동결 캡처, 라벨링 프로토콜
 - [서드파티 구성요소](./THIRD_PARTY.ko.md)
