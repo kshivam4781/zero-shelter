@@ -80,6 +80,31 @@ It prints every point awarded and the weights table it came from. Quote that
 rather than reasoning about severity yourself — the numbers are reproducible
 and your reconstruction is not.
 
+## When looking at it beats being told
+
+```bash
+npx --yes zero-shelter judge --format html --output zero-shelter.html
+```
+
+Hand that over instead of a long summary when the list is long, when someone
+asks what the state is rather than what to do next, or when the answer belongs
+to more than one person. `--lang ko` for a Korean page.
+
+## What happened before this run
+
+```bash
+npx --yes zero-shelter history
+npx --yes zero-shelter history --json --last 10
+```
+
+Each line is a recorded run: how many were outstanding, what appeared, what
+stopped being reported. Use it to answer "is this getting better", and quote it
+rather than characterising a trend from a single run.
+
+Say **no longer reported**, not fixed. A finding also leaves the list when it
+is accepted into the baseline, and when the scanner that found it did not run —
+the history cannot tell those from a fix, and neither can you from here.
+
 ## Boundaries that make this useful
 
 - **Do not re-order, filter, or add findings.** If the ranking looks wrong, say
