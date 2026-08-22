@@ -123,6 +123,6 @@ describe("choosing an audit", () => {
 
     const result = await collect({ cwd, capture });
 
-    expect(result.skipped.join(" ")).toContain("osv-scanner does read yarn.lock");
+    expect(result.skipped.join(" ")).toContain("osv-scanner reads yarn.lock");
   });
 });
