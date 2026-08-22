@@ -62,6 +62,12 @@ export interface Messages {
   readonly nothingOutstanding: string;
   readonly nothingScanned: string;
 
+  readonly history: string;
+  readonly historyOutstanding: string;
+  readonly historyAppeared: string;
+  readonly historyGone: string;
+  readonly historyNote: string;
+
   readonly reproduce: string;
   readonly reproduceBody: string;
   readonly deterministic: string;
@@ -126,10 +132,17 @@ const EN: Messages = {
   nothingScanned:
     "Nothing was scanned, so this is not a pass. The notes above say what stopped each source.",
 
+  history: "Recorded runs",
+  historyOutstanding: "outstanding",
+  historyAppeared: "appeared",
+  historyGone: "no longer reported",
+  historyNote:
+    "Recorded when the run was asked to (--record). A finding leaves this list when it is fixed, when it is accepted into the baseline, or when the scanner that found it did not run.",
+
   reproduce: "Reproducing this",
   reproduceBody: "This page was written by:",
   deterministic:
-    "The same judgement produces a byte-identical page. There is no clock in it unless one was passed in.",
+    "The same judgement and the same recorded runs produce a byte-identical page. Nothing here is read from a clock while rendering; the dates above come from the history file.",
   severityRank: "Rank",
 };
 
@@ -190,10 +203,17 @@ const KO: Messages = {
   nothingScanned:
     "아무것도 스캔하지 못했으므로 통과가 아닙니다. 각 소스가 왜 멈췄는지는 위 메모에 있습니다.",
 
+  history: "기록된 실행",
+  historyOutstanding: "미해결",
+  historyAppeared: "새로 나타남",
+  historyGone: "더 이상 보고되지 않음",
+  historyNote:
+    "--record로 요청한 실행만 기록됩니다. 항목이 이 목록에서 빠지는 경우는 셋입니다 — 고쳤거나, baseline에 수용했거나, 그걸 찾아낸 스캐너가 이번엔 돌지 않았거나.",
+
   reproduce: "이 페이지 재현하기",
   reproduceBody: "이 페이지를 만든 명령:",
   deterministic:
-    "같은 판정은 바이트 단위로 같은 페이지를 만듭니다. 명시적으로 넣지 않는 한 시각 정보는 들어가지 않습니다.",
+    "같은 판정과 같은 기록이면 바이트 단위로 같은 페이지가 나옵니다. 렌더링 중에 시계를 읽지 않으며, 위의 날짜는 기록 파일에서 온 것입니다.",
   severityRank: "순위",
 };
 
