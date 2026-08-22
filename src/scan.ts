@@ -104,20 +104,6 @@ export async function collect(options: ScanOptions): Promise<Collected> {
     skipped.push(`${audit.tool ?? "npm audit"} skipped: ${audit.reason}`);
   }
 
-  // yarn v1 writes NDJSON, which nothing here reads. Saying so beats letting
-  // the run end in "nothing was scanned" with no hint about why.
-  if (
-    contributed.length === 0 &&
-    existsSync(join(options.cwd, "yarn.lock")) &&
-    !existsSync(join(options.cwd, "package-lock.json"))
-  ) {
-    skipped.push(
-      "yarn.lock found: yarn's audit output is not read yet. " +
-        "Run `yarn npm audit --json > audit.json` (yarn 2+) and pass it with --input, " +
-        "or generate a package-lock.json with `npm i --package-lock-only`",
-    );
-  }
-
   const osv = await runOsvScanner(options);
   if (osv.ok) {
     try {
@@ -128,6 +114,18 @@ export async function collect(options: ScanOptions): Promise<Collected> {
     }
   } else {
     skipped.push(`osv-scanner skipped: ${osv.reason}`);
+  }
+
+  // Decided after both scanners have run, not before: osv-scanner reads
+  // yarn.lock perfectly well, and this note used to print underneath a
+  // successful scan telling the reader we could not read their project.
+  if (contributed.length === 0 && existsSync(join(options.cwd, "yarn.lock"))) {
+    skipped.push(
+      "yarn.lock found and nothing could read it: yarn v1 writes NDJSON, which " +
+        "this tool does not parse. osv-scanner does read yarn.lock — installing it " +
+        "is the shortest path — or generate a package-lock.json with " +
+        "`npm i --package-lock-only`",
+    );
   }
 
   return { findings, skipped, contributed };

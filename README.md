@@ -82,9 +82,10 @@ where most of the deduplication comes from.
 pnpm projects work the same way: a `pnpm-lock.yaml` makes it run `pnpm audit`
 instead. npm 6's older report shape is read too.
 
-yarn is not supported yet — yarn v1 writes NDJSON, which nothing here parses.
-A yarn project is told so, with the two ways around it, instead of ending in
-"nothing was scanned".
+yarn works through `osv-scanner`, which reads `yarn.lock` directly. Without it
+there is nothing to read — yarn v1 writes NDJSON, which this tool does not
+parse — and the run says so, along with the two ways around it, instead of
+ending in a silent "nothing was scanned".
 
 ## In CI
 
