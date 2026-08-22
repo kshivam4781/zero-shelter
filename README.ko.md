@@ -7,9 +7,10 @@
 
 로컬에서 돕니다. 실행 중 LLM 없음, 자체 네트워크 호출 없음, 텔레메트리 없음.
 
-> **상태: 초기.** [`zero-shelter@0.0.1`](https://www.npmjs.com/package/zero-shelter)
-> 프리뷰가 나가 있습니다. 파이프라인은 처음부터 끝까지 동작하고
-> Linux·macOS·Windows에서 테스트 97개로 덮여 있습니다. 0.1.0 전까지 인터페이스는
+> **상태: 초기.** [`zero-shelter`](https://www.npmjs.com/package/zero-shelter)
+> 프리뷰가 나가 있습니다. 파이프라인은 처음부터 끝까지 동작하고, CI가
+> Linux·macOS·Windows에서 이를 검증합니다 — 패키징된 tarball을 설치해 돌려보는 것과
+> 이 저장소 자신에게 도구를 돌리는 것까지 포함해서요. 0.1.0 전까지 인터페이스는
 > 바뀔 수 있습니다.
 
 ## 문제

@@ -82,7 +82,7 @@ deleted code were deleted along with it.
 
 ## Definition of done — 2026-08-25 24:00
 
-All ten green from `npm run qa`, and the result posted as a QA report in
+All green from `npm run qa` (twelve checks, two of them added after the QA itself found gaps: a workspace root, and a run with both scanners present), and the result posted as a QA report in
 Discussions. Once a version is published, the same checks should be repeated
 against `npx --yes zero-shelter@latest` — packing locally proves the tree is
 sound, not that the registry has it.

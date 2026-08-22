@@ -1,0 +1,59 @@
+name: Publish
+
+# Publishing happens from a GitHub Release, so the human step that decides a
+# version is a human step in this repository rather than a token on someone's
+# laptop. npm trusts this workflow through OIDC: no NPM_TOKEN exists, nothing
+# to leak, nothing to rotate, and every published tarball carries provenance
+# tying it back to the commit and the run that built it.
+#
+# The trusted publisher on npmjs.com is configured with:
+#   publisher: GitHub Actions · zero-shelter/zero-shelter · publish.yml
+# Renaming this file breaks publishing until that configuration is updated.
+
+on:
+  release:
+    types: [published]
+  # Kept for a release that has to be re-run after a transient failure. It
+  # publishes whatever version is in package.json, and npm refuses a version
+  # that already exists, so this cannot quietly overwrite anything.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # The OIDC token npm verifies. Without it there is no trusted publishing.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The npm bundled with the runner's Node predates trusted publishing.
+      - name: Use an npm that can publish with OIDC
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # prepublishOnly runs these too. Running them here as well means a
+      # failure is reported as a failing step rather than as a publish that
+      # stopped halfway.
+      - run: npm test
+
+      - name: Check this version is not already published
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "zero-shelter@$VERSION" version > /dev/null 2>&1; then
+            echo "zero-shelter@$VERSION is already on the registry."
+            echo "Bump the version in package.json — npm never lets a version be reused."
+            exit 1
+          fi
+          echo "publishing zero-shelter@$VERSION"
+
+      - name: Publish
+        run: npm publish --provenance --access public
