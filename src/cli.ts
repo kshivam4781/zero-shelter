@@ -15,6 +15,8 @@ import { parseOsv } from "./ingest/osv.js";
 import { collect, isWorkspaceRoot } from "./scan.js";
 import { cwdFromPayload, hookContext, hookOutput, readStdin } from "./hook.js";
 import { colorEnabled, renderExplain, renderHuman, renderJson } from "./report.js";
+import { renderHtml } from "./html.js";
+import { isLanguage } from "./messages.js";
 import { renderSarif } from "./sarif.js";
 import type { ScaFinding } from "./finding.js";
 import { versionOutput } from "./version.js";
@@ -25,7 +27,10 @@ const USAGE = `zero-shelter judge — decide which dependency findings to fix no
 
   --input <file>        read scanner output instead of running scanners.
                         Repeatable. Format is detected from the contents.
-  --format <fmt>        text (default) | json | sarif
+  --format <fmt>        text (default) | json | sarif | html
+  --lang <code>         language for the html report: en (default) | ko
+  --stamp <text>        a line of your choosing in the html footer. Left out
+                        by default so the same judgement renders identically
   --json                shorthand for --format json
   --output <file>       write to a file instead of stdout
   --explain             show how each score was reached
@@ -55,6 +60,8 @@ export async function main(argv: readonly string[]): Promise<number> {
       options: {
         input: { type: "string", multiple: true },
         format: { type: "string" },
+        lang: { type: "string" },
+        stamp: { type: "string" },
         output: { type: "string" },
         json: { type: "boolean" },
         explain: { type: "boolean" },
@@ -97,8 +104,14 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
 
   const format = values.format ?? (values.json === true ? "json" : "text");
-  if (format !== "text" && format !== "json" && format !== "sarif") {
-    process.stderr.write(`--format expects text, json or sarif, got ${format}\n`);
+  if (format !== "text" && format !== "json" && format !== "sarif" && format !== "html") {
+    process.stderr.write(`--format expects text, json, sarif or html, got ${format}\n`);
+    return 2;
+  }
+
+  const language = values.lang ?? "en";
+  if (!isLanguage(language)) {
+    process.stderr.write(`--lang expects en or ko, got ${language}\n`);
     return 2;
   }
 
@@ -193,6 +206,12 @@ export async function main(argv: readonly string[]): Promise<number> {
     rendered = renderJson(result);
   } else if (format === "sarif") {
     rendered = renderSarif(result);
+  } else if (format === "html") {
+    rendered = renderHtml(result, {
+      language,
+      ...(values.stamp === undefined ? {} : { stamp: values.stamp }),
+      command: `zero-shelter ${argv.join(" ")}`,
+    });
   } else {
     // Colour is decided by where this is going. Writing to a file always means
     // no escape codes, whatever the terminal says.

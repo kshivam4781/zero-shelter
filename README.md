@@ -131,6 +131,18 @@ It never blocks a prompt and never fails — on any error it stays quiet and exi
 0, because interrupting someone's session over a report they did not ask for is
 worse than saying nothing. See [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md).
 
+## A page to look at
+
+```console
+$ npx zero-shelter judge --format html --output report.html
+```
+
+One file, opened in a browser: the commands to run first, every finding with
+the score that put it there, and what was accepted or has stopped being
+reported. No network, no build step, and the same judgement renders
+byte-identically, so two reports can be diffed. `--lang ko` for Korean;
+`--stamp "..."` if the page needs a date on it.
+
 ## As a Claude Code plugin
 
 ```
