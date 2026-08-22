@@ -128,6 +128,17 @@ yarn은 `osv-scanner`로 됩니다 — 그쪽이 `yarn.lock`을 직접 읽습니
 요청하지도 않은 보안 리포트 때문에 남의 작업 세션이 끊기는 건 아무 말도 안 하는
 것보다 나쁩니다. [docs/AGENT-HOOK.md](./docs/AGENT-HOOK.md)를 보세요.
 
+## 사람이 보는 리포트
+
+```console
+$ npx zero-shelter judge --format html --output report.html
+```
+
+브라우저로 여는 파일 하나입니다. 먼저 실행할 명령, 각 항목이 그 자리에 온 점수,
+수용했거나 더 이상 보고되지 않는 것까지 담깁니다. 네트워크도 빌드도 없고, 같은
+판정은 바이트 단위로 같은 페이지를 만들어서 두 리포트를 diff로 비교할 수 있습니다.
+`--lang ko`로 한국어, 날짜가 필요하면 `--stamp "..."`.
+
 ## Claude Code 플러그인으로
 
 ```
