@@ -16,7 +16,7 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
@@ -130,7 +130,11 @@ await check("1. nothing scanned is not a pass", "exit 2, never 0", async () => {
 });
 
 await check("3. an old Node is explained", "exit 2 with both versions named", async () => {
-  const bin = join(project, "node_modules", "zero-shelter", "dist", "bin.js");
+  // import() takes a URL. Handing it a Windows path fails with
+  // ERR_UNSUPPORTED_ESM_URL_SCHEME, and the exit code that produces is 1 —
+  // indistinguishable from the tool declining to run on an old Node, which is
+  // what this check is trying to observe.
+  const bin = pathToFileURL(join(project, "node_modules", "zero-shelter", "dist", "bin.js")).href;
   const { code, stderr } = await run(
     "node",
     ["--input-type=module", "-e", `Object.defineProperty(process.versions,"node",{value:"18.19.0",configurable:true});await import(${JSON.stringify(bin)});`],
