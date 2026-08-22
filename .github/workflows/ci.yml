@@ -34,6 +34,29 @@ jobs:
 
       - run: npm test
 
+  # The install experience, checked against the packaged tarball on the two
+  # platforms most people install on. This script has caught more real problems
+  # than any other check here — a deleted feature, a claim about pnpm that was
+  # only true through --input, a second scanner erasing the upgrade commands —
+  # and every one of them was invisible to the unit tests. Windows is included
+  # because it is the platform none of us develops on.
+  install-experience:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm run qa
+
   third-party:
     runs-on: ubuntu-latest
     steps:

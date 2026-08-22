@@ -13,7 +13,7 @@
  */
 
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +22,12 @@ import { promisify } from "node:util";
 const run = promisify(execFile);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const keep = process.argv.includes("--keep");
+const windows = process.platform === "win32";
+
+// npm and pnpm ship as .cmd shims on Windows, which execFile cannot invoke
+// without a shell. Everything else here is Node's own filesystem API, because
+// mkdir -p is not a thing on a runner without a POSIX shell.
+const npm = (args, options) => run("npm", args, { ...options, shell: windows });
 
 // Old enough to have advisories that will not be revoked, pinned so the
 // expected counts do not drift when a new one is published.
@@ -39,9 +45,13 @@ const check = async (name, expectation, fn) => {
 
 /** Run the installed CLI and return { code, stdout, stderr } without throwing. */
 const cli = async (cwd, args) => {
-  const bin = join(project, "node_modules", ".bin", "zero-shelter");
+  const bin = join(project, "node_modules", ".bin", windows ? "zero-shelter.cmd" : "zero-shelter");
   try {
-    const { stdout, stderr } = await run(bin, args, { cwd, maxBuffer: 64 * 1024 * 1024 });
+    const { stdout, stderr } = await run(bin, args, {
+      cwd,
+      maxBuffer: 64 * 1024 * 1024,
+      shell: windows,
+    });
     return { code: 0, stdout, stderr };
   } catch (error) {
     return { code: error.code ?? 1, stdout: error.stdout ?? "", stderr: error.stderr ?? "" };
@@ -53,26 +63,27 @@ const expect = (condition, message) => {
 };
 
 console.log("packing…");
-const { stdout: packed } = await run("npm", ["pack", "--silent"], { cwd: root });
+const { stdout: packed } = await npm(["pack", "--silent"], { cwd: root });
 const tarball = join(root, packed.trim().split("\n").pop());
 
 const workspace = await mkdtemp(join(tmpdir(), "zero-shelter-qa-"));
 const project = join(workspace, "project");
 const empty = join(workspace, "empty");
 
-await run("mkdir", ["-p", project, empty]);
+await mkdir(project, { recursive: true });
+await mkdir(empty, { recursive: true });
 await writeFile(
   join(project, "package.json"),
   `${JSON.stringify({ name: "qa-project", version: "1.0.0", dependencies: VULNERABLE }, null, 2)}\n`,
 );
 
 console.log("installing the tarball into a throwaway project…");
-await run("npm", ["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts"], { cwd: project });
-await run("npm", ["install", "--no-save", "--no-audit", "--no-fund", tarball], { cwd: project });
+await npm(["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts"], { cwd: project });
+await npm(["install", "--no-save", "--no-audit", "--no-fund", tarball], { cwd: project });
 
 await check("2. --version prints a version", "matches package.json", async () => {
   const { stdout, code } = await cli(project, ["--version"]);
-  const { version } = JSON.parse(await run("node", ["-p", "JSON.stringify(require('./package.json'))"], { cwd: root }).then((r) => r.stdout));
+  const { version } = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
   expect(code === 0, `exit ${code}`);
   expect(stdout.includes(version), `printed ${stdout.trim()}, package.json says ${version}`);
   return stdout.trim();
@@ -140,7 +151,7 @@ await check("10. baseline silences, then the loop closes", "exit 0, then credit 
   expect(/nothing new to fix/.test(after.stdout), "did not go quiet after recording");
 
   // Now actually fix it, and check the run says so.
-  await run("npm", ["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts", "lodash@4.18.1"], { cwd: project });
+  await npm(["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts", "lodash@4.18.1"], { cwd: project });
   const fixed = await cli(project, ["judge"]);
   expect(/no longer reported/.test(fixed.stdout), "a fix produced no acknowledgement");
   return "recorded → quiet → fix acknowledged";
@@ -148,7 +159,7 @@ await check("10. baseline silences, then the loop closes", "exit 0, then credit 
 
 await check("a workspace root says the command needs -w", "caveat only in workspaces", async () => {
   const root = join(workspace, "monorepo");
-  await run("mkdir", ["-p", join(root, "packages", "app")]);
+  await mkdir(join(root, "packages", "app"), { recursive: true });
   await writeFile(
     join(root, "package.json"),
     `${JSON.stringify({ name: "root", private: true, workspaces: ["packages/*"] })}\n`,
@@ -157,7 +168,7 @@ await check("a workspace root says the command needs -w", "caveat only in worksp
     join(root, "packages", "app", "package.json"),
     `${JSON.stringify({ name: "app", version: "1.0.0", dependencies: VULNERABLE })}\n`,
   );
-  await run("npm", ["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts"], { cwd: root });
+  await npm(["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts"], { cwd: root });
 
   const { stdout } = await cli(root, ["judge"]);
   expect(/npm i lodash@/.test(stdout), "no upgrade command in a workspace");
@@ -172,7 +183,7 @@ await check("a workspace root says the command needs -w", "caveat only in worksp
 
 await check("both sources reconcile when osv-scanner is present", "cross-source path exercised", async () => {
   const osv = process.env["OSV_SCANNER"] ?? "osv-scanner";
-  const available = await run(osv, ["--version"]).then(() => true, () => false);
+  const available = await run(osv, ["--version"], { shell: windows }).then(() => true, () => false);
   if (!available) {
     // Skipped rather than failed: this is the one check that needs a tool we
     // do not ship. CI installs it (pinned and checksummed) so the path is
@@ -189,7 +200,7 @@ await check("both sources reconcile when osv-scanner is present", "cross-source 
 
 await check("7. nothing but dist ships", "no runtime dependencies", async () => {
   const manifest = JSON.parse(
-    (await run("node", ["-p", "JSON.stringify(require('zero-shelter/package.json'))"], { cwd: project })).stdout,
+    await readFile(join(project, "node_modules", "zero-shelter", "package.json"), "utf8"),
   );
   expect(Object.keys(manifest.dependencies ?? {}).length === 0, "runtime dependencies appeared");
   expect(JSON.stringify(manifest.files) === JSON.stringify(["dist"]), `files: ${JSON.stringify(manifest.files)}`);
