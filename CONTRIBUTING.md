@@ -54,7 +54,8 @@ large refactor:
    using the template and include the evidence.
 
 An agent may help with any of these steps, but the human contributor owns the
-scope, correctness, and review of every changed file.
+scope, correctness, and review of every changed file. Repository-local agent
+rules are in [`AGENTS.md`](./AGENTS.md).
 
 ## Labels and assignees
 

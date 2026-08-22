@@ -47,7 +47,7 @@ Node.js 20 이상이 필요하며 database·service·API key·실행 중 LLM은 
 3. 하나의 작업만 담은 branch를 만들고 최소 변경을 구현합니다. 동작이 바뀌면 fixture나 회귀 테스트를 추가합니다.
 4. [QA 체크리스트](./docs/qa-checklist.ko.md)를 실행한 뒤 PR template을 사용해 근거와 함께 PR을 엽니다.
 
-Agent가 이 과정을 도울 수 있지만, 범위·정확성·모든 변경 파일의 최종 검토 책임은 사람 기여자에게 있습니다.
+Agent가 이 과정을 도울 수 있지만, 범위·정확성·모든 변경 파일의 최종 검토 책임은 사람 기여자에게 있습니다. 저장소 로컬 agent 규칙은 [`AGENTS.ko.md`](./AGENTS.ko.md)에 있습니다.
 
 ## Label과 Assignee
 
