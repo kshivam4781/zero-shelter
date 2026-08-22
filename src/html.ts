@@ -68,7 +68,7 @@ export function renderHtml(result: JudgeResult, options: HtmlOptions): string {
                   .filter((entry) => entry.finding.fixedIn === undefined)
                   .map((entry) => entry.finding.packageName),
               ),
-            ].slice(0, 8),
+            ],
             result.workspaceRoot === true,
             t,
           ),
@@ -199,6 +199,8 @@ function actionBlock(
  * upgrade; one told to re-judge reports what the tool says, which is the only
  * claim worth making.
  */
+const UNFIXABLE_NAMED = 8;
+
 function promptBlock(
   actions: readonly UpgradeAction[],
   indirect: readonly TransitiveFix[],
@@ -223,7 +225,16 @@ function promptBlock(
     );
   }
   if (unfixable.length > 0) {
-    prompts.push(t.promptUnfixable(unfixable.join(", ")));
+    // Naming forty packages in one prompt helps nobody, but pretending there
+    // were only eight is the silent truncation this project objects to
+    // everywhere else.
+    const named = unfixable.slice(0, UNFIXABLE_NAMED);
+    const hidden = unfixable.length - named.length;
+    prompts.push(
+      hidden > 0
+        ? t.promptUnfixableMore(named.join(", "), hidden)
+        : t.promptUnfixable(named.join(", ")),
+    );
   }
   if (prompts.length === 0) return "";
 
@@ -431,8 +442,13 @@ function closing(result: JudgeResult, t: ReturnType<typeof messagesFor>): string
  * and a bar someone can read the number off answers it without a drawing that
  * implies precision we do not have between two points.
  */
+const RUNS_SHOWN = 12;
+
 function historyBlock(history: readonly Change[], t: ReturnType<typeof messagesFor>): string {
-  const recent = history.slice(-12);
+  const recent = history.slice(-RUNS_SHOWN);
+  // Truncating without saying so is the thing this project keeps objecting to
+  // in other people's reports.
+  const hidden = history.length - recent.length;
   const peak = Math.max(...recent.map((change) => change.entry.outstanding.length), 1);
 
   const rows = recent.map((change) => {
@@ -461,6 +477,9 @@ function historyBlock(history: readonly Change[], t: ReturnType<typeof messagesF
     '<section class="history">',
     `<h2>${escape(t.history)}</h2>`,
     `<ol class="runs">${rows.join("")}</ol>`,
+    hidden > 0
+      ? `<p class="quiet small">${escape(t.historyOlder(hidden, history.length))}</p>`
+      : "",
     `<p class="quiet small">${escape(t.historyNote)}</p>`,
     "</section>",
   ].join("\n");

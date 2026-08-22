@@ -43,12 +43,15 @@ export function hookContext(result: JudgeResult): string | undefined {
   // way, and the invented way is usually `npm i package@latest` on something
   // transitive. The commands are already computed; withholding them here just
   // moves the guessing.
-  const commands = upgradeActions(result.fixNow).slice(0, LIMIT);
+  const everyCommand = upgradeActions(result.fixNow);
+  const commands = everyCommand.slice(0, LIMIT);
   const remedy =
     commands.length === 0
       ? []
       : [
-          "Fixable now:",
+          everyCommand.length > LIMIT
+            ? `Fixable now (${everyCommand.length - LIMIT} more command(s) not shown):`
+            : "Fixable now:",
           // `$` rather than `-`: the findings above are a bulleted list and
           // these are commands to run. Two identical-looking lists in one
           // context is how an agent ends up "fixing" a finding by pasting its
