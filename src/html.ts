@@ -12,7 +12,12 @@
  * no clock unless a caller passes one in.
  */
 
-import { transitiveFixes, upgradeActions } from "./actions.js";
+import {
+  type TransitiveFix,
+  type UpgradeAction,
+  transitiveFixes,
+  upgradeActions,
+} from "./actions.js";
 import type { JudgeResult } from "./report.js";
 import { WEIGHTS } from "./triage.js";
 import { type Language, messagesFor } from "./messages.js";
@@ -54,6 +59,18 @@ export function renderHtml(result: JudgeResult, options: HtmlOptions): string {
       ? verdict(result, t)
       : [
           actionBlock(actions, result.workspaceRoot === true, t),
+          promptBlock(
+            actions,
+            indirect,
+            [
+              ...new Set(
+                outstanding
+                  .filter((entry) => entry.finding.fixedIn === undefined)
+                  .map((entry) => entry.finding.packageName),
+              ),
+            ].slice(0, 8),
+            t,
+          ),
           indirect.length > 0 ? transitiveBlock(indirect, t) : "",
           ledger(result, t),
         ].join("\n"),
@@ -112,6 +129,7 @@ function header(result: JudgeResult, options: HtmlOptions, t: ReturnType<typeof 
     `<label class="theme" for="dark"><span class="dot"></span>${escape(t.themeLabel)}</label>`,
     "</header>",
     `<div class="counts">${counts}</div>`,
+    glossary(t),
     options.stamp === undefined ? "" : `<p class="stamp">${escape(options.stamp)}</p>`,
   ]
     .filter((line) => line !== "")
@@ -164,12 +182,78 @@ function actionBlock(
   return [
     '<section class="act">',
     `<h2>${escape(t.actNow)}</h2>`,
+    `<p class="how">${escape(t.actNowHow)}</p>`,
     `<ol class="commands">${rows.join("")}</ol>`,
     workspaceRoot ? `<p class="caveat">${escape(t.workspaceCaveat)}</p>` : "",
     "</section>",
   ]
     .filter((line) => line !== "")
     .join("\n");
+}
+
+/**
+ * Prompts, because the next step is often "ask the agent to do it".
+ *
+ * Each one ends by re-judging. An agent told only to upgrade will report the
+ * upgrade; one told to re-judge reports what the tool says, which is the only
+ * claim worth making.
+ */
+function promptBlock(
+  actions: readonly UpgradeAction[],
+  indirect: readonly TransitiveFix[],
+  unfixable: readonly string[],
+  t: ReturnType<typeof messagesFor>,
+): string {
+  const prompts: string[] = [];
+
+  if (actions.length > 0) {
+    prompts.push(t.promptFix(actions.map((action) => `${action.packageName}@${action.upgradeTo}`).join(", ")));
+  }
+  if (indirect.length > 0) {
+    prompts.push(
+      t.promptOverrides(indirect.map((entry) => `${entry.packageName}@${entry.upgradeTo}`).join(", ")),
+    );
+  }
+  if (unfixable.length > 0) {
+    prompts.push(t.promptUnfixable(unfixable.join(", ")));
+  }
+  if (prompts.length === 0) return "";
+
+  const items = prompts.map(
+    (prompt) =>
+      '<li class="prompt">' +
+      `<p>${escape(prompt)}</p>` +
+      `<button class="copy" type="button" data-copy="${escape(prompt)}" data-copied="${escape(t.copied)}">${escape(t.copy)}</button>` +
+      "</li>",
+  );
+
+  return [
+    '<section class="prompts">',
+    `<h2>${escape(t.promptsHeading)}</h2>`,
+    `<p class="how">${escape(t.promptsHow)}</p>`,
+    `<ul class="prompt-list">${items.join("")}</ul>`,
+    "</section>",
+  ].join("\n");
+}
+
+/**
+ * A glossary, folded away.
+ *
+ * Someone reading their first report does not know what "after merge" means,
+ * and someone reading their fiftieth does not want to be told again.
+ */
+function glossary(t: ReturnType<typeof messagesFor>): string {
+  const rows = t.glossaryTerms.map(
+    ([term, meaning]) =>
+      `<div class="term"><dt>${escape(term)}</dt><dd>${escape(meaning)}</dd></div>`,
+  );
+
+  return [
+    '<details class="glossary">',
+    `<summary>${escape(t.glossary)}</summary>`,
+    `<dl>${rows.join("")}</dl>`,
+    "</details>",
+  ].join("");
 }
 
 function transitiveBlock(
@@ -229,6 +313,7 @@ function ledger(result: JudgeResult, t: ReturnType<typeof messagesFor>): string 
   return [
     '<section class="ledger">',
     `<h2>${escape(t.ledger)}</h2>`,
+    `<p class="how">${escape(t.ledgerHow)}</p>`,
     '<div class="headrow">',
     `<span>${escape(t.colSeverity)}</span>`,
     `<span>${escape(t.colPackage)}</span>`,
@@ -503,6 +588,20 @@ body:has(#dark:checked) .theme .dot { background: var(--accent); }
 .notes li::before { content: "·"; position: absolute; left: 4px; color: var(--ink-faint); }
 
 .verdict { margin: 34px 0 0; font-size: 19px; max-width: 62ch; }
+
+.how { margin: 0 0 14px; color: var(--ink-soft); font-size: 13px; max-width: 74ch; }
+.glossary { margin-top: 14px; }
+.glossary dl { margin: 10px 0 0; display: grid; gap: 8px; }
+.term { display: grid; grid-template-columns: 152px minmax(0, 1fr); gap: 14px; font-size: 13px; }
+.term dt { color: var(--ink); }
+.term dd { margin: 0; color: var(--ink-soft); }
+@media (max-width: 700px) { .term { grid-template-columns: 1fr; gap: 2px; } }
+
+.prompts { margin-top: 34px; max-width: 82ch; }
+.prompt-list { list-style: none; margin: 0; padding: 0; }
+.prompt { display: flex; align-items: flex-start; gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--rule); }
+.prompt p { margin: 0; flex: 1; max-width: 68ch; font-size: 13.5px; color: var(--ink); }
+.prompt .copy { flex: none; margin-top: 1px; }
 
 .act { margin-top: 42px; }
 .commands { list-style: none; margin: 0; padding: 0; }

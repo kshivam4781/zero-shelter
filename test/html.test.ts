@@ -155,3 +155,46 @@ describe("recorded runs in the report", () => {
     );
   });
 });
+
+describe("finding the action", () => {
+  it("explains what the commands do, not just what they are", () => {
+    expect(page).toContain("Each line upgrades one package");
+  });
+
+  it("offers prompts that end by re-judging", () => {
+    // An agent told only to upgrade reports the upgrade. One told to re-judge
+    // reports what the tool says, which is the only claim worth making.
+    expect(page).toContain("Or hand it to an agent");
+    expect(page).toContain("npx zero-shelter judge` again");
+    expect(page).toContain("Do not run --update-baseline");
+    expect(page).toContain("do not report success from npm audit");
+  });
+
+  it("makes every prompt and command copyable", () => {
+    const copyable = [...page.matchAll(/data-copy="/g)].length;
+    const commands = [...page.matchAll(/npm i \S+@/g)].length;
+
+    expect(copyable).toBeGreaterThan(0);
+    expect(commands).toBeGreaterThan(0);
+  });
+
+  it("says what the numbers mean without shouting it", () => {
+    // Folded away: a first reader needs it, a fiftieth reader does not.
+    expect(page).toContain("What the numbers mean");
+    expect(page).toContain("Not the same as fixed");
+    expect(page).toMatch(/<details class="glossary">/);
+  });
+
+  it("asks about reachability for findings with no fix, and claims nothing", () => {
+    const unfixable = renderHtml(
+      judge(
+        findings.map((entry) => ({ ...entry, fixedIn: undefined, fixAvailable: false })),
+        { baseline: emptyBaseline() },
+      ),
+      { language: "en" },
+    );
+
+    expect(unfixable).toContain("no published fix");
+    expect(unfixable).toContain("say plainly when you cannot tell");
+  });
+});

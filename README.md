@@ -156,9 +156,11 @@ not run.
 $ npx zero-shelter judge --format html --output report.html
 ```
 
-One file, opened in a browser: the commands to run first, every finding with
-the score that put it there, and what was accepted or has stopped being
-reported. No network, no build step, and the same judgement renders
+One file, opened in a browser: the commands to run first with what each one
+clears, prompts you can paste into a coding agent, every finding with the score
+that put it there, and what was accepted or has stopped being reported. Every
+command and prompt has a copy button, and a folded glossary says what each
+number means for whoever is reading their first one. No network, no build step, and the same judgement renders
 byte-identically, so two reports can be diffed. `--lang ko` for Korean;
 `--stamp "..."` if the page needs a date on it.
 
