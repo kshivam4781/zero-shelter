@@ -23,6 +23,7 @@ const docs = {
   "skills/explain/SKILL.md": read("skills/explain/SKILL.md"),
   "skills/fix/SKILL.md": read("skills/fix/SKILL.md"),
   "skills/ci/SKILL.md": read("skills/ci/SKILL.md"),
+  "AGENTS.md": read("AGENTS.md"),
 };
 
 /** Flags a user types. Internal ones are not the reader's problem. */
@@ -97,6 +98,15 @@ describe("the docs describe the tool that exists", () => {
     // baseline and will call a project clean while accepted findings stand.
     expect(docs["skills/fix/SKILL.md"]).toContain("not with `npm audit`");
     expect(docs["skills/ci/SKILL.md"]).toContain("Why not just `npm audit`");
+  });
+
+  it("keeps the agent brief saying the things agents get wrong", () => {
+    // Every line here was written because an agent did the opposite in a real
+    // session: rebuilt commands from fixedIn, verified with npm audit, or
+    // treated a transitive package as installable.
+    for (const rule of ["upgrades", "npm audit", "transitiveFixes", "--update-baseline"]) {
+      expect(docs["AGENTS.md"], `AGENTS.md lost ${rule}`).toContain(rule);
+    }
   });
 
   it("does not claim formats the CLI would reject", () => {

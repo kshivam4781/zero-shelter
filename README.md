@@ -201,6 +201,18 @@ would take that away.
 `--explain` prints every point awarded and the weights table it came from, so
 the ranking can be argued with rather than trusted.
 
+## When it says something you did not expect
+
+| It says | What is happening |
+|---|---|
+| `cannot judge …: no scanner produced a report` | Nothing was scanned, and this exits 2 rather than pretending to pass. Usually there is no lockfile: `npm i --package-lock-only` |
+| `yarn.lock found and nothing could read it` | yarn v1 writes NDJSON, which this does not parse. `osv-scanner` reads `yarn.lock` directly and is the shortest way out |
+| `zero-shelter needs Node 20 or later` | That is the whole problem; there is no flag that works around it |
+| `osv-scanner skipped: not on PATH` | Optional, and the run still works. Installing it is where most of the deduplication comes from |
+| `… is SARIF, which is what this tool writes rather than reads` | `--input` takes scanner reports, not our own output |
+| `… is not valid JSON` about a baseline | An interrupted `--update-baseline` leaves a truncated file. Delete it and re-record |
+| `first run — record these as accepted` | The whole backlog is being reported because there is no baseline yet. That is what `--update-baseline` is for |
+
 ## Design invariants
 
 These do not change. A patch that breaks one is rejected on that basis alone.
@@ -261,6 +273,7 @@ know about, including that the ranking predates the labels.
 
 - [Architecture](./docs/architecture.md) — layers, sequence diagram, where to add things
 - [v1 scope](./docs/v1-scope.md) — what is in, what is deferred, and why
+- [AGENTS.md](./AGENTS.md) — what an agent working in a repository that uses this needs to know
 - [Agent hook](./docs/AGENT-HOOK.md) — setup, and what it deliberately will not do
 - [Benchmark](./bench/README.md) — pinned targets, frozen captures, labelling protocol
 
