@@ -1,5 +1,5 @@
 ---
-description: Read zero-shelter's output and explain what to fix first and why. Use when someone asks what a zero-shelter run means, why a finding is ranked where it is, which vulnerability to fix first, or what to do about the ones left over.
+description: Read zero-shelter's output and explain what to fix first and why, or hand over an html report to look at. Use when someone asks what a zero-shelter run means, why a finding is ranked where it is, which vulnerability to fix first, or what to do about the ones left over. Korean requests look like: 이 결과 해석해줘, 뭐부터 고쳐야 해, 리포트 보여줘.
 ---
 
 # Reading a run

@@ -169,8 +169,11 @@ byte-identically, so two reports can be diffed. `--lang ko` for Korean;
 /plugin install zero-shelter@zero-shelter
 ```
 
-Two skills. `/zero-shelter:setup` runs the first scan and offers the CI and hook
-wiring; `/zero-shelter:explain` reads a run and says what to fix first and why.
+Four skills. `/zero-shelter:setup` runs the first scan, `/zero-shelter:explain`
+reads a run and says what to fix first, `/zero-shelter:fix` applies the upgrades
+and re-judges to confirm they landed, and `/zero-shelter:ci` puts the gate in a
+pipeline — baseline first, so the build fails on what a change introduced rather
+than on the backlog it inherited.
 
 Both are presentation only. The skills are told not to re-rank, filter or add
 findings, and to quote `--explain` rather than reason about severity themselves:

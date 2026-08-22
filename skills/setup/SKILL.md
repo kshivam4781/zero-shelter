@@ -1,5 +1,5 @@
 ---
-description: Run zero-shelter on this project for the first time and wire it in. Use when someone asks to check dependency vulnerabilities, set up a security gate in CI, cut down scanner noise, or install zero-shelter.
+description: Run zero-shelter on this project for the first time and wire it in. Use when someone asks to check dependency vulnerabilities, cut down scanner noise, or install zero-shelter. Korean requests look like: 의존성 취약점 점검해줘, 보안 스캔 돌려줘, zero-shelter 설치.
 ---
 
 # First run
