@@ -21,6 +21,8 @@ const docs = {
   "README.ko.md": read("README.ko.md"),
   "skills/setup/SKILL.md": read("skills/setup/SKILL.md"),
   "skills/explain/SKILL.md": read("skills/explain/SKILL.md"),
+  "skills/fix/SKILL.md": read("skills/fix/SKILL.md"),
+  "skills/ci/SKILL.md": read("skills/ci/SKILL.md"),
 };
 
 /** Flags a user types. Internal ones are not the reader's problem. */
@@ -76,6 +78,25 @@ describe("the docs describe the tool that exists", () => {
     for (const field of ["upgrades", "transitiveFixes", "noLongerReported", "summary.shown"]) {
       expect(docs["skills/explain/SKILL.md"], `explain skill lost ${field}`).toContain(field);
     }
+  });
+
+  it("keeps every shipped skill described in both READMEs", () => {
+    // A skill nobody is told about is a skill nobody invokes.
+    for (const skill of ["setup", "explain", "fix", "ci"]) {
+      expect(docs["README.md"], `README.md never mentions ${skill}`).toContain(
+        `zero-shelter:${skill}`,
+      );
+      expect(docs["README.ko.md"], `README.ko.md never mentions ${skill}`).toContain(
+        `zero-shelter:${skill}`,
+      );
+    }
+  });
+
+  it("tells each skill to verify with this tool rather than npm audit", () => {
+    // Left to itself an agent reaches for `npm audit`, which does not know the
+    // baseline and will call a project clean while accepted findings stand.
+    expect(docs["skills/fix/SKILL.md"]).toContain("not with `npm audit`");
+    expect(docs["skills/ci/SKILL.md"]).toContain("Why not just `npm audit`");
   });
 
   it("does not claim formats the CLI would reject", () => {
