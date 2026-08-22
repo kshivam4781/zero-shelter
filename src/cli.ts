@@ -166,15 +166,22 @@ export async function main(argv: readonly string[]): Promise<number> {
   });
 
   if (values["update-baseline"] === true) {
+    // Same treatment as --output: a failed write here is a permissions or path
+    // problem, and a stack trace is a worse way to learn that.
     // Record everything currently present, not just what survived the ratchet,
     // so re-running immediately afterwards reports nothing new.
     const all = judge(findings, { baseline: emptyBaseline() });
-    await mkdir(dirname(baselinePath), { recursive: true });
-    await writeFile(
-      baselinePath,
-      serializeBaseline(baselineFrom(all.fixNow, sources)),
-      "utf8",
-    );
+    try {
+      await mkdir(dirname(baselinePath), { recursive: true });
+      await writeFile(
+        baselinePath,
+        serializeBaseline(baselineFrom(all.fixNow, sources)),
+        "utf8",
+      );
+    } catch (error) {
+      process.stderr.write(`cannot write ${baselinePath}: ${reasonFor(error)}\n`);
+      return 2;
+    }
     process.stdout.write(
       `recorded ${all.fixNow.length} finding(s) as accepted in ${values.baseline ?? BASELINE_PATH}\n`,
     );
@@ -201,11 +208,39 @@ export async function main(argv: readonly string[]): Promise<number> {
     process.stdout.write(rendered);
   } else {
     const target = resolve(cwd, values.output);
-    await mkdir(dirname(target), { recursive: true });
-    await writeFile(target, rendered, "utf8");
+    try {
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, rendered, "utf8");
+    } catch (error) {
+      process.stderr.write(`cannot write ${target}: ${reasonFor(error)}\n`);
+      return 2;
+    }
   }
 
   return result.fixNow.length > 0 ? 1 : 0;
+}
+
+/**
+ * The part of a filesystem error worth showing.
+ *
+ * Node's message repeats the syscall and the path we already printed; the code
+ * is the part that says what to do about it.
+ */
+function reasonFor(error: unknown): string {
+  const code = (error as NodeJS.ErrnoException).code;
+  switch (code) {
+    case "EACCES":
+    case "EPERM":
+      return "permission denied";
+    case "ENOENT":
+      return "a directory in that path does not exist";
+    case "ENOSPC":
+      return "no space left on device";
+    case "EROFS":
+      return "read-only filesystem";
+    default:
+      return code ?? (error as Error).message;
+  }
 }
 
 function parseTop(raw: string | undefined): number | undefined | Error {
@@ -246,6 +281,15 @@ async function readInput(path: string): Promise<ScaFinding[]> {
   const record = probe as Record<string, unknown>;
   if ("vulnerabilities" in record || "advisories" in record) return parseNpmAudit(raw);
   if ("results" in record) return parseOsv(raw);
+
+  // People reach for the file this tool just wrote. Saying "unrecognised" to
+  // our own output format is a needlessly puzzling answer to a reasonable move.
+  if ("runs" in record && typeof record["version"] === "string") {
+    throw new Error(
+      `${path} is SARIF, which is what this tool writes rather than reads. ` +
+        "Pass the scanner report instead (npm audit --json, osv-scanner --format json).",
+    );
+  }
 
   throw new Error(
     `${path}: unrecognised report. Expected npm audit (vulnerabilities) or osv-scanner (results).`,
