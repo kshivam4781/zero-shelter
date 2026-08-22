@@ -87,7 +87,7 @@ describe("choosing an audit", () => {
     // scanned" with no hint is the outcome this replaces.
     const said = result.skipped.join(" ");
     expect(said).toContain("yarn.lock found");
-    expect(said).toContain("--input");
+    expect(said).toContain("npm i --package-lock-only");
   });
 
   it("stays quiet about yarn when a source did report", async () => {
@@ -98,5 +98,31 @@ describe("choosing an audit", () => {
     const result = await collect({ cwd, capture });
 
     expect(result.skipped.join(" ")).not.toContain("yarn.lock found");
+  });
+
+  it("stays quiet about yarn when osv-scanner read the project", async () => {
+    // osv-scanner reads yarn.lock. The note used to be decided before it ran,
+    // so it printed underneath a successful scan telling the reader we could
+    // not read their project.
+    const cwd = await projectWith("yarn.lock");
+    const osvReport = readFileSync(
+      fileURLToPath(new URL("./fixtures/osv-scanner.json", import.meta.url)),
+      "utf8",
+    );
+    const { capture } = spy({ npm: ENOLOCK, "osv-scanner": osvReport });
+
+    const result = await collect({ cwd, capture });
+
+    expect(result.contributed).toContain("osv-scanner");
+    expect(result.skipped.join(" ")).not.toContain("yarn.lock found");
+  });
+
+  it("points a stuck yarn project at the tool that would read it", async () => {
+    const cwd = await projectWith("yarn.lock");
+    const { capture } = spy({ npm: ENOLOCK });
+
+    const result = await collect({ cwd, capture });
+
+    expect(result.skipped.join(" ")).toContain("osv-scanner does read yarn.lock");
   });
 });
