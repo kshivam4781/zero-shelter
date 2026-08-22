@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.0.4
+
+**A page to look at.** `judge --format html --output report.html` writes one
+self-contained file: the commands to run first, then every finding with the
+score that put it there and the weights table underneath, so a reader who
+disagrees with the order can point at a row. No network, no build step, light
+and dark both switchable without JavaScript, and Korean with `--lang ko`.
+
+Deliberately not a dashboard. No donut charts, no composite risk score — both
+would be inventions of the presentation layer, and inventing there would undo
+the property this tool sells.
+
+**A history.** `judge --record` appends one line per run to
+`.zero-shelter/history.jsonl`, and `zero-shelter history` says what appeared and
+what stopped being reported between runs. It keeps fingerprints rather than
+counts, because counts cannot tell "two fixed and two appeared" from "nothing
+changed". Nothing is recorded unless asked, and the report grows a section once
+two runs exist.
+
+It says *no longer reported*, never *fixed*: a finding also leaves the list when
+it is accepted into the baseline, and when the scanner that found it did not
+run.
+
+**Two more skills.** `/zero-shelter:fix` applies the upgrades and re-judges to
+confirm they landed — including the transitive ones `npm i` cannot reach.
+`/zero-shelter:ci` puts the gate in a pipeline, baseline first, so the build
+fails on what a change introduced rather than on the backlog it inherited. Both
+were rewritten after watching an agent verify a fix with `npm audit` and skip
+the CI skill entirely.
+
 ## 0.0.3
 
 **A second scanner no longer deletes the advice.** npm audit names the version
