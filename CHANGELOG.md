@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.0.5
+
+**The report says what to do about it.** The command block explains what a line
+does before listing any, so "clears 7" reads as a consequence. Under it, three
+prompts generated from the actual findings — upgrade the direct ones, show what
+an `overrides` entry would look like for the transitive ones, check reachability
+for the ones with no published fix — each ending by re-judging, because an agent
+told only to upgrade reports the upgrade rather than the result. Every command
+and prompt has a copy button. A folded glossary says what reported, after merge,
+outstanding, accepted and the rest actually mean.
+
+In a workspace the generated prompt sends the agent to find the package.json
+that declared the range, because pasting the plain command at the root installs
+into the root.
+
+**A skill for the baseline.** Accepting a finding is the decision this tool is
+most likely to be misused for. `/zero-shelter:baseline` asks the two questions
+that separate a reasonable accept from a lazy one, and says plainly that
+recording is never a way to end a task or green a build.
+
+**Plainer sentences, in both languages.** Two English messages were three
+clauses strung together with dashes. The Korean went through a detector and two
+reviewers: a comma after a connective ending appeared 24 times, 3.7x what
+Korean prose does, and one contrastive frame carried 13 of the document's
+turns. Both are down, and the five contrasts that survived are the ones where
+the contrast is the claim.
+
+The reviews caught two failures in opposite directions — a rewrite that quietly
+dropped the precision disclaimer this project has promised never to drop, and
+one that removed every comma a person would also have written. Both corrected.
+
 ## 0.0.4
 
 **A page to look at.** `judge --format html --output report.html` writes one
