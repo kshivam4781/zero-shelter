@@ -62,6 +62,25 @@ const expect = (condition, message) => {
   if (!condition) throw new Error(message);
 };
 
+/**
+ * A project of its own.
+ *
+ * The checks run in order against a shared project, and one of them records a
+ * baseline and upgrades the dependency — so anything that needs outstanding
+ * findings has to start from its own copy rather than inherit whatever the
+ * check above it left behind.
+ */
+const freshProject = async (name, manifest = {}) => {
+  const dir = join(workspace, name);
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    join(dir, "package.json"),
+    `${JSON.stringify({ name, version: "1.0.0", dependencies: VULNERABLE, ...manifest }, null, 2)}\n`,
+  );
+  await npm(["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts"], { cwd: dir });
+  return dir;
+};
+
 console.log("packing…");
 const { stdout: packed } = await npm(["pack", "--silent"], { cwd: root });
 const tarball = join(root, packed.trim().split("\n").pop());
@@ -200,6 +219,39 @@ await check("both sources reconcile when osv-scanner is present", "cross-source 
   const complaint = parsed.skipped.find((note) => note.startsWith("osv-scanner"));
   expect(complaint === undefined, `osv-scanner did not contribute: ${complaint}`);
   return "npm audit + osv-scanner";
+});
+
+await check("the html report is one openable file", "self-contained, escaped, no network", async () => {
+  const fresh = await freshProject("html-project");
+  const { stdout } = await cli(fresh, ["judge", "--format", "html"]);
+
+  expect(stdout.startsWith("<!doctype html>"), "not an html document");
+  expect(!/<link[^>]+href=|<script[^>]+src=/.test(stdout), "the page pulls something over the network");
+  expect(/npm i lodash@/.test(stdout), "the page does not say what to run");
+  // Rendered twice from the same judgement, the bytes must match; two reports
+  // of the same state should diff to nothing.
+  const again = await cli(fresh, ["judge", "--format", "html"]);
+  expect(again.stdout === stdout, "the same judgement rendered differently twice");
+  return `${Math.round(stdout.length / 1024)}KB, byte-identical on a re-run`;
+});
+
+await check("history records only when asked", "no file until --record", async () => {
+  const fresh = await freshProject("history-project");
+
+  await cli(fresh, ["judge"]);
+  const before = await cli(fresh, ["history"]);
+  expect(before.code === 2, `history without a recording exited ${before.code}`);
+
+  await cli(fresh, ["judge", "--record"]);
+  await npm(["install", "--package-lock-only", "--no-audit", "--no-fund", "--ignore-scripts", "lodash@4.18.1"], { cwd: fresh });
+  await cli(fresh, ["judge", "--record"]);
+
+  const after = await cli(fresh, ["history"]);
+  expect(after.code === 0, `history exited ${after.code}`);
+  expect(/outstanding/.test(after.stdout), "history printed nothing useful");
+  // The second run fixed everything, so the difference has to show.
+  expect(/-\d/.test(after.stdout), "history did not record anything leaving the list");
+  return "silent until asked, then two runs with a delta";
 });
 
 await check("7. nothing but dist ships", "no runtime dependencies", async () => {

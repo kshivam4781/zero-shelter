@@ -52,6 +52,32 @@ into "fixed" when the CLI itself is hedging.
 Prune the baseline afterwards with `--update-baseline` so it stops listing
 fingerprints nothing produces.
 
+## A page for a human
+
+```bash
+npx --yes zero-shelter judge --format html --output zero-shelter.html
+```
+
+One self-contained file: the commands first, then every finding with the score
+that put it there. Offer it when someone wants to look for themselves, share a
+state with a teammate, or read it in Korean (`--lang ko`). It needs no network
+and no server; opening the file is enough.
+
+## Keeping a history
+
+```bash
+npx --yes zero-shelter judge --record
+npx --yes zero-shelter history
+```
+
+`--record` appends one line per run to `.zero-shelter/history.jsonl`; nothing is
+recorded unless asked. `history` shows what appeared and what stopped being
+reported between runs, and the html report grows a section once two runs exist.
+
+Suggest `--record` when a project is going to be judged repeatedly — in CI, or
+alongside a baseline. Do not turn it on silently: it writes a file into their
+repository, and that is their decision.
+
 ## Wiring it in
 
 Offer these; do not add them unasked.
