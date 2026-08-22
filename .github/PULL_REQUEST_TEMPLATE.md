@@ -9,6 +9,8 @@ Closes #
 - [ ] Linked Issue has exactly one `status:*` label
 - [ ] `type:*` and relevant `area:*` labels are applied
 - [ ] An Owner is assigned to the Issue or PR
+- [ ] A human Owner reviewed every changed file, including agent-assisted edits
+- [ ] Any protected-area change is covered by the linked Issue/spec and required review
 
 ## Scope
 

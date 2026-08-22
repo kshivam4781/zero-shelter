@@ -39,6 +39,23 @@ Before implementation:
 
 Small documentation or test fixes may use the PR template directly. Features and security controls need a spec.
 
+## Your first contribution
+
+If you are new to the repository, start with a focused Issue rather than a
+large refactor:
+
+1. Browse [good first issues](https://github.com/zero-shelter/zero-shelter/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+   or [help wanted issues](https://github.com/zero-shelter/zero-shelter/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+2. Comment with the behavior you intend to change and wait for clarification
+   when the scope or ownership is unclear.
+3. Create one focused branch, make the smallest useful change, and add a
+   fixture or regression test when behavior changes.
+4. Run the checks in the [QA checklist](./docs/qa-checklist.md), then open a PR
+   using the template and include the evidence.
+
+An agent may help with any of these steps, but the human contributor owns the
+scope, correctness, and review of every changed file.
+
 ## Labels and assignees
 
 GitHub metadata is the source of truth for workflow state:
@@ -79,6 +96,8 @@ An agent may draft a spec, but the human contributor owns its accuracy and appro
 - Documentation and examples are updated.
 - Security and privacy checks are complete.
 - Affected files, interfaces, conflicts, and breaking changes are stated.
+- A human Owner reviewed every changed file, including agent-assisted edits.
+- No unrelated changes remain in the diff.
 
 Use [`docs/qa-checklist.md`](./docs/qa-checklist.md) and the PR template.
 

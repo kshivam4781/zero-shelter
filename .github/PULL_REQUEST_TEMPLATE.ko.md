@@ -9,6 +9,8 @@ Closes #
 - [ ] 연결된 Issue에 `status:*` label이 정확히 하나 있음
 - [ ] `type:*`와 관련 `area:*` label이 적용됨
 - [ ] Issue 또는 PR에 사람 Owner가 지정됨
+- [ ] Agent가 도운 변경을 포함해 사람이 모든 변경 파일을 검토함
+- [ ] 보호 영역 변경은 연결된 Issue/명세와 필요한 리뷰를 갖춤
 
 ## 범위
 

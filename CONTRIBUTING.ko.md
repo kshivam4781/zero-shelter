@@ -37,6 +37,18 @@ Node.js 20 이상이 필요하며 database·service·API key·실행 중 LLM은 
 
 작은 문서·테스트 수정은 PR 템플릿만 사용해도 되지만, 기능과 보안 제어 변경은 명세가 필요합니다.
 
+## 첫 기여 시작하기
+
+처음 기여한다면 큰 리팩터링보다 범위가 분명한 Issue부터 시작합니다.
+
+1. [good first issue](https://github.com/zero-shelter/zero-shelter/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)나
+   [help wanted Issue](https://github.com/zero-shelter/zero-shelter/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)를 찾습니다.
+2. 바꾸려는 동작을 댓글로 설명하고, 범위나 담당자가 불분명하면 먼저 확인합니다.
+3. 하나의 작업만 담은 branch를 만들고 최소 변경을 구현합니다. 동작이 바뀌면 fixture나 회귀 테스트를 추가합니다.
+4. [QA 체크리스트](./docs/qa-checklist.ko.md)를 실행한 뒤 PR template을 사용해 근거와 함께 PR을 엽니다.
+
+Agent가 이 과정을 도울 수 있지만, 범위·정확성·모든 변경 파일의 최종 검토 책임은 사람 기여자에게 있습니다.
+
 ## Label과 Assignee
 
 GitHub metadata를 workflow 상태의 정본으로 사용합니다.
@@ -77,6 +89,8 @@ Agent가 초안을 작성할 수는 있지만 정확성에 대한 책임과 최�
 - 문서·예시가 갱신됨
 - 보안·개인정보 확인 완료
 - 영향 파일·interface·충돌·breaking change를 기록함
+- Agent가 수정한 내용을 포함해 사람이 모든 변경 파일을 검토함
+- diff에 범위 밖의 변경이 남아 있지 않음
 
 [`docs/qa-checklist.ko.md`](./docs/qa-checklist.ko.md)와 PR template을 최종 체크리스트로 사용합니다.
 
