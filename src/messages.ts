@@ -34,6 +34,7 @@ export interface Messages {
   readonly promptFixWorkspace: (commands: string) => string;
   readonly promptOverrides: (packages: string) => string;
   readonly promptUnfixable: (packages: string) => string;
+  readonly promptUnfixableMore: (packages: string, hidden: number) => string;
   readonly glossary: string;
   readonly glossaryTerms: readonly (readonly [string, string])[];
   readonly actNowEmpty: string;
@@ -78,6 +79,7 @@ export interface Messages {
   readonly historyAppeared: string;
   readonly historyGone: string;
   readonly historyNote: string;
+  readonly historyOlder: (hidden: number, total: number) => string;
 
   readonly reproduce: string;
   readonly reproduceBody: string;
@@ -113,6 +115,8 @@ const EN: Messages = {
     `These packages have a published fix but arrive through another dependency: ${packages}. Show me what a package.json "overrides" entry would look like for them, and say which parent package pinned each old version and what could break. Do not apply it yet.`,
   promptUnfixable: (packages) =>
     `These have no published fix: ${packages}. For each, check whether the vulnerable code path is reachable from this project's own code, and say plainly when you cannot tell.`,
+  promptUnfixableMore: (packages, hidden) =>
+    `These have no published fix: ${packages}, and ${hidden} more listed in the report. For each, check whether the vulnerable code path is reachable from this project's own code, and say plainly when you cannot tell.`,
   glossary: "What the numbers mean",
   glossaryTerms: [
     ["reported", "Findings the scanners handed over, before anything was reconciled."],
@@ -173,6 +177,8 @@ const EN: Messages = {
   historyOutstanding: "outstanding",
   historyAppeared: "appeared",
   historyGone: "no longer reported",
+  historyOlder: (hidden, total) =>
+    `Showing the last 12 of ${total} recorded runs; ${hidden} older one(s) are in .zero-shelter/history.jsonl.`,
   historyNote:
     "Recorded when the run was asked to (--record). A finding leaves this list when it is fixed, when it is accepted into the baseline, or when the scanner that found it did not run.",
 
@@ -211,6 +217,8 @@ const KO: Messages = {
     `이 패키지들은 수정 버전이 있지만 다른 의존성을 통해 들어와: ${packages}. package.json "overrides" 항목이 어떻게 되는지 보여주고 각각 어느 상위 패키지가 옛 버전을 고정했는지와 뭐가 깨질 수 있는지 말해줘. 아직 적용하지는 마.`,
   promptUnfixable: (packages) =>
     `이건 공개된 수정 버전이 없어: ${packages}. 각각 그 취약한 코드 경로가 이 프로젝트 코드에서 실제로 도달 가능한지 확인하고 판단할 수 없으면 없다고 분명히 말해줘.`,
+  promptUnfixableMore: (packages, hidden) =>
+    `이건 공개된 수정 버전이 없어: ${packages}, 그리고 리포트에 ${hidden}개 더 있어. 각각 그 취약한 코드 경로가 이 프로젝트 코드에서 실제로 도달 가능한지 확인하고, 판단할 수 없으면 없다고 분명히 말해줘.`,
   glossary: "숫자가 뜻하는 것",
   glossaryTerms: [
     ["원시 보고", "스캐너가 넘긴 그대로의 항목 수. 아직 아무것도 맞대지 않은 상태입니다."],
@@ -270,6 +278,8 @@ const KO: Messages = {
   historyOutstanding: "미해결",
   historyAppeared: "새로 나타남",
   historyGone: "더 이상 보고되지 않음",
+  historyOlder: (hidden, total) =>
+    `기록된 ${total}회 중 최근 12회입니다. 나머지 ${hidden}회는 .zero-shelter/history.jsonl에 있습니다.`,
   historyNote:
     "--record로 요청한 실행만 기록됩니다. 항목이 이 목록에서 빠지는 경우는 셋입니다 — 고쳤거나, baseline에 수용했거나, 그걸 찾아낸 스캐너가 이번엔 돌지 않았거나.",
 

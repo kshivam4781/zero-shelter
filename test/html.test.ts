@@ -200,3 +200,54 @@ describe("finding the action", () => {
     expect(unfixable).toContain("say plainly when you cannot tell");
   });
 });
+
+describe("nothing is dropped quietly", () => {
+  const run = (count: number) =>
+    judge(
+      Array.from({ length: count }, (_, i) => ({
+        kind: "SCA",
+        fingerprint: `fp${i}`,
+        severity: "high",
+        title: "t",
+        ecosystem: "npm",
+        packageName: `pkg-${i}`,
+        vulnerableRange: "<1",
+        fixAvailable: false,
+        advisoryId: `GHSA-${i}`,
+        aliases: [`GHSA-${i}`],
+        transitive: false,
+        sources: [{ tool: "npm-audit", ruleId: `GHSA-${i}` }],
+      })) as never,
+      { baseline: emptyBaseline() },
+    );
+
+  it("says how many packages the prompt did not name", () => {
+    const many = renderHtml(run(30), { language: "en" });
+
+    expect(many).toContain("more listed in the report");
+    // And says nothing about hidden packages when none are hidden.
+    expect(renderHtml(run(3), { language: "en" })).not.toContain("more listed in the report");
+  });
+
+  it("says how many recorded runs are older than the ones shown", () => {
+    const history = Array.from({ length: 20 }, (_, i) => ({
+      entry: {
+        v: "1",
+        at: `2026-08-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`,
+        sources: ["npm-audit"],
+        raw: 1,
+        merged: 1,
+        accepted: 0,
+        outstanding: ["a"],
+      },
+      appeared: [] as string[],
+      gone: [] as string[],
+    }));
+
+    const page20 = renderHtml(result, { language: "en", history });
+    expect(page20).toContain("Showing the last 12 of 20 recorded runs");
+
+    const page5 = renderHtml(result, { language: "en", history: history.slice(0, 5) });
+    expect(page5).not.toContain("recorded runs;");
+  });
+});

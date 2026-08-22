@@ -58,6 +58,25 @@ describe("agent hook", () => {
     expect(bullets.some((line) => line.includes("npm i "))).toBe(false);
   });
 
+  it("says when it did not list every command", () => {
+    const many = {
+      ...result,
+      fixNow: Array.from({ length: 9 }, (_, i) => ({
+        ...result.fixNow[0]!,
+        finding: {
+          ...result.fixNow[0]!.finding,
+          packageName: `pkg-${i}`,
+          fixedIn: "1.0.0",
+          transitive: false,
+        },
+      })),
+    };
+
+    // An agent handed five of nine commands, with no hint there were nine,
+    // reports the job done after five.
+    expect(hookContext(many)).toContain("more command(s) not shown");
+  });
+
   it("emits the additionalContext shape agents read", () => {
     const parsed = JSON.parse(hookOutput("hello"));
 
