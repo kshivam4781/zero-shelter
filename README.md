@@ -229,7 +229,7 @@ These do not change. A patch that breaks one is rejected on that basis alone.
 | No LLM at runtime | The same input must produce the same output, on every machine. And your code stays on your machine. |
 | No network calls of our own | Results must be reproducible offline. Scanners we shell out to are their own business, and we say that plainly rather than claiming more than we do. |
 | Integer arithmetic only in scoring | Floating point rounds differently across platforms. A ranking that shifts by host makes every number we publish true only on the machine that produced it. |
-| Secrets hashed at parse time, originals discarded | A security tool that leaks what it finds has no reason to exist. |
+| Secrets hashed at parse time, originals discarded | Applies when secret scanning lands; v1 has none, and the hashing this needs is already in `src/fingerprint.ts`. A security tool that leaks what it finds has no reason to exist. |
 | Everything fingerprinted goes through `src/normalize.ts` | Two normalization paths means two identities for one finding. |
 
 CI runs the suite on Ubuntu, macOS and Windows and asserts fixed hash values, so
