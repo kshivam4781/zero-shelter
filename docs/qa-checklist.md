@@ -2,6 +2,8 @@
 
 Use this checklist in the feature spec and pull request. Remove items that genuinely do not apply and explain why.
 
+For beta release gates, stable QA case IDs, execution cadence, and dated reports, use the [Beta QA Guide](qa/README.md).
+
 ## Automated validation
 
 - [ ] `npm test` passes
