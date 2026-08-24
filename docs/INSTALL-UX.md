@@ -19,8 +19,8 @@ install UX; the wording of an actual finding is output quality.
 
 | Path | Command | Status |
 |---|---|---|
-| No install | `npx zero-shelter judge` | works — `zero-shelter@0.0.1` is on npm |
-| Dev dependency | `npm i -D zero-shelter` then `npx zero-shelter judge` | to verify |
+| No install | `npx zero-shelter judge` | works — the preview package is published as `zero-shelter@0.0.5` |
+| Dev dependency | `npm i -D zero-shelter` then `npx zero-shelter judge` | works — uses the published package |
 | From source | `git clone … && npm ci && npm run build && npm run judge` | works |
 
 Node 20 or later. No runtime dependencies, 47.5 kB packed.
@@ -83,9 +83,9 @@ deleted code were deleted along with it.
 ## Definition of done — 2026-08-25 24:00
 
 All green from `npm run qa` (fourteen checks, two of them added after the QA itself found gaps: a workspace root, and a run with both scanners present), and the result posted as a QA report in
-Discussions. Once a version is published, the same checks should be repeated
-against `npx --yes zero-shelter@latest` — packing locally proves the tree is
-sound, not that the registry has it.
+Discussions. A published version now exists, so the same checks should also be
+repeated against `npx --yes zero-shelter@latest` for each release — packing
+locally proves the tree is sound, not that the registry serves the same bytes.
 
 Exit codes, which CI depends on and therefore cannot change casually:
 

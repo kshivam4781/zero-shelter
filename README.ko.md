@@ -180,10 +180,14 @@ $ npx zero-shelter judge --format html --output report.html
 
 ```
 --input <file>        스캐너를 돌리는 대신 저장된 출력을 읽음 (반복 가능)
---format <fmt>        text (기본) | json | sarif
+--format <fmt>        text (기본) | json | sarif | html
+--lang <code>         HTML 리포트 언어: en (기본) | ko
+--stamp <text>        HTML footer에 넣을 선택 문구
+--json                --format json shorthand
 --output <file>       stdout 대신 파일로 씀
 --explain             각 점수가 어떻게 나왔는지 보여줌
 --top <n>             최대 n줄만 출력 (수치와 조치 안내는 프로젝트 전체 기준 유지)
+--record              이 실행을 .zero-shelter/history.jsonl에 추가
 --update-baseline     현재 항목들을 수용으로 기록
 --baseline <file>     baseline 위치 (기본 .zero-shelter/baseline.json)
 --cwd <dir>           프로젝트 디렉터리
@@ -191,6 +195,9 @@ $ npx zero-shelter judge --format html --output report.html
 ```
 
 `zero-shelter version`도 같은 version을 출력하는 명령입니다.
+
+`zero-shelter history [--json] [--last <n>]`은 실행 사이에 나타나거나 사라진
+Finding을 보여줍니다. `judge --record`를 요청한 경우에만 기록됩니다.
 
 `--explain`은 부여된 점수와 그 근거가 된 가중치 표를 전부 출력합니다. 랭킹을
 **믿는 대신 따질 수 있게** 하려는 것입니다.
