@@ -23,8 +23,11 @@ One command, `npx zero-shelter judge`, behaving the same locally and in CI.
 
 ## What v1 does not do
 
-No SAST, no secret scanning, no prompt-time hooks, no natural-language rule
-packs. Those are sequenced later rather than dropped, for the reason below.
+No SAST, no secret scanning, no prompt intent detection, prompt rewriting, or
+natural-language rule packs. v1 does include a non-blocking Agent Hook that
+injects dependency judgement context; it does not decide whether a prompt is
+allowed or replace what the user typed. The broader controls are sequenced
+later rather than dropped, for the reason below.
 
 ---
 
@@ -120,6 +123,6 @@ After v1 works end to end:
 1. **Secrets** (gitleaks + trufflehog) — the second layer where overlap is real.
 2. **SAST ingest** (SARIF) — here the goal is one ordered list rather than
    deduplication, since the overlap is thin.
-3. **Developer-intent rules and prompt-time hooks.**
+3. **Developer-intent rules and prompt policy controls.**
 
 Each step begins only after the previous one has been measured on the benchmark.

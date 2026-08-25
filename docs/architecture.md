@@ -2,10 +2,10 @@
 
 How `npx zero-shelter judge` is put together, and where to add things.
 
-The shape is deliberately boring: data moves in one direction through five
-layers, and only the outermost one touches the world. That is what makes it
-possible for several people to work on different layers at once without
-stepping on each other.
+The shape is deliberately boring: judgement data moves in one direction
+through five core layers, while the CLI adds history and presentation adapters
+around the result. That is what makes it possible for several people to work
+on different layers at once without stepping on each other.
 
 ## Layers
 
@@ -40,6 +40,13 @@ flowchart TD
 
     subgraph present["Presentation — pure"]
         report["report.ts<br/>table / JSON / --explain"]
+        html["html.ts<br/>HTML / en / ko"]
+        sarif["sarif.ts<br/>SARIF"]
+        hook["hook.ts<br/>agent context"]
+    end
+
+    subgraph history["Run history — local JSONL"]
+        historyModel["history.ts<br/>recorded changes"]
     end
 
     bin --> cli
@@ -53,14 +60,24 @@ flowchart TD
     finding --> judge
     judge --> merge --> triage --> base
     judge --> report
+    judge --> html
+    judge --> sarif
+    judge --> hook
+    cli --> historyModel
     report --> cli
+    html --> cli
+    sarif --> cli
+    hook --> cli
 ```
 
-**Only `bin.ts`, `cli.ts` and `scan.ts` touch the outside world.** Everything
-else is a function from data to data. That is not architectural taste — it is
-what lets the tests drive the entire judgement path from fixtures without ever
-spawning a scanner, so a test failure means the logic is wrong rather than that
-someone's machine lacks a binary.
+**Project I/O and subprocesses stay at the boundary.** `cli.ts` owns files,
+stdin, stdout, and exit codes; `scan.ts` owns scanner subprocesses; and
+`version.ts` reads only the installed package metadata. The judgement,
+normalization, history model, and presentation modules remain data-to-data
+functions. That is not architectural taste — it is what lets the tests drive
+the judgement path from fixtures without ever spawning a scanner, so a test
+failure means the logic is wrong rather than that someone's machine lacks a
+binary.
 
 ## One run, end to end
 
@@ -101,14 +118,22 @@ sequenceDiagram
     base-->>judge: fresh / suppressed
     judge-->>cli: JudgeResult
 
-    cli->>rep: renderHuman | renderJson | renderExplain
-    rep-->>cli: string
-    cli-->>dev: output + exit 1 if anything is new
+    alt judge
+        cli->>rep: renderHuman | renderJson | renderHtml | renderSarif
+        rep-->>cli: string
+        opt --record
+            cli->>cli: append .zero-shelter/history.jsonl
+        end
+        cli-->>dev: output + exit 1 if anything is new
+    else hook
+        cli->>rep: hookContext + hookOutput
+        rep-->>dev: context or quiet exit 0
+    end
 ```
 
 ## The data, as it changes shape
 
-Five types, each produced by exactly one layer:
+Core types, each produced by exactly one layer:
 
 | Type | Produced by | What it is |
 |---|---|---|
@@ -117,6 +142,7 @@ Five types, each produced by exactly one layer:
 | `MergedFinding` | `merge.ts` | One advisory, all sources that saw it |
 | `RankedFinding` | `triage.ts` | A merged finding plus its score and reasons |
 | `JudgeResult` | `judge.ts` | Everything the report needs, and nothing more |
+| `Change` | `history.ts` | The difference between recorded runs |
 
 Adding a field means deciding which layer owns it. If no layer can fill it, it
 does not go in — we removed `devOnly` for exactly that reason.
@@ -136,8 +162,9 @@ makes every number we publish true only on the machine that produced it. Output
 must not depend on input order — every stage sorts by fingerprint, and there are
 tests that reverse the input and compare.
 
-**Presentation** — reads, never computes. If the table shows something the JSON
-cannot, that is a bug: they are three views of one dataset, not three datasets.
+**Presentation** — reads, never computes. If one view shows something the JSON
+cannot, that is a bug: text, JSON, SARIF, HTML, and hook context are views of
+one judgement, not separate datasets.
 
 **Entry / acquisition** — the only place allowed to fail because of the
 environment. A missing optional scanner is a note, not an error.
@@ -147,7 +174,8 @@ environment. A missing optional scanner is a note, not an error.
 ```
 새 스캐너를 붙이려면        → src/ingest/<tool>.ts + scan.ts에 한 줄
 판정 품질을 고치려면        → src/merge.ts, src/triage.ts
-출력을 바꾸려면             → src/report.ts
+출력을 바꾸려면             → src/report.ts, src/html.ts, src/sarif.ts
+실행 이력을 바꾸려면        → src/history.ts, src/cli.ts
 새 명령을 추가하려면        → src/cli.ts
 ```
 
@@ -179,17 +207,16 @@ wrong:
   user.
 - `bin.js` needs its `#!/usr/bin/env node` line. TypeScript preserves it because
   it is the first line of `bin.ts`.
-- Nothing is published yet. The first publish is a human decision — see the
-  release checklist when we write one.
+- The preview package is published through the GitHub Release workflow with
+  npm trusted publishing (OIDC). The current package metadata and release
+  status live in [`package.json`](../package.json) and the [npm package](https://www.npmjs.com/package/zero-shelter).
 
 ## What is not covered by tests
 
 Said plainly so nobody mistakes a green CI for more than it is.
 
-**`scan.ts` has no tests.** CI passing on Windows means the 68 tests pass there;
-it does not mean `npm.cmd` resolution, non-zero exit handling, or the ENOENT
-path have ever run on Windows. Those are the least verified lines in the
-project.
-
-Fixing that means making the subprocess call injectable so the failure modes can
-be driven without a real scanner.
+Scanner subprocess failure modes are driven through the injectable `Capture`
+boundary in `scan.ts`, and package/install behavior is checked by
+`npm run qa` against the packed artifact on Linux and Windows. The CI suite
+also runs the unit tests on Ubuntu, macOS, and Windows; test counts are evidence
+from a run, not a permanent architecture contract.

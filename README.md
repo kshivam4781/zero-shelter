@@ -188,11 +188,15 @@ would take that away.
 
 ```
 --input <file>        read scanner output instead of running scanners (repeatable)
---format <fmt>        text (default) | json | sarif
+--format <fmt>        text (default) | json | sarif | html
+--lang <code>         language for the HTML report: en (default) | ko
+--stamp <text>        optional line in the HTML footer
+--json                shorthand for --format json
 --output <file>       write to a file instead of stdout
 --explain             show how each score was reached
 --top <n>             print at most n rows (the counts and advice stay about
                       the whole project)
+--record              append this run to .zero-shelter/history.jsonl
 --update-baseline     record current findings as accepted
 --baseline <file>     baseline location (default .zero-shelter/baseline.json)
 --cwd <dir>           project directory
@@ -204,6 +208,9 @@ would take that away.
 The existing `NO_COLOR` environment variable remains supported.
 
 `zero-shelter version` is an equivalent command for scripts and users who prefer subcommands.
+
+`zero-shelter history [--json] [--last <n>]` shows the recorded changes between
+runs. Nothing is recorded unless `judge --record` is requested.
 
 `--explain` prints every point awarded and the weights table it came from, so
 the ranking can be argued with rather than trusted.
