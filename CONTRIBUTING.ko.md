@@ -138,3 +138,21 @@ Refs #123
 영어가 정책과 기술 문서의 정본이며 한국어 번역은 영어 문서와 연결하고 동작 변경과 함께 갱신합니다.
 
 관련 문서: [`GOVERNANCE.ko.md`](./GOVERNANCE.ko.md), [`SECURITY.ko.md`](./SECURITY.ko.md), [`docs/feature-spec-template.ko.md`](./docs/feature-spec-template.ko.md), [`docs/qa-checklist.ko.md`](./docs/qa-checklist.ko.md)
+
+## 언어 추가하기
+
+HTML 리포트는 명령을 실행하지 않은 사람이, 자기 나라에서 읽습니다. 언어 하나를
+더하는 건 세 단계이고 문자열 말고는 코드가 필요 없습니다.
+
+1. `src/messages.ts`에 카탈로그를 추가합니다. `Messages`가 타입이라 키가 빠지면
+   빌드가 실패합니다. 영어가 그 자리에 렌더되는 일은 없습니다.
+2. 코드를 `LANGUAGES`와 `src/cli.ts` 사용법의 `--lang` 줄에 넣습니다. 배포되는
+   언어가 `--help`에 없으면 테스트가 실패합니다.
+3. 오른쪽에서 왼쪽으로 쓰는 언어라면 `src/html.ts`의 `RIGHT_TO_LEFT`에 코드를
+   추가합니다. 레이아웃이 논리 속성을 쓰므로 나머지는 알아서 뒤집힙니다.
+
+번역하지 않는 것 둘: 터미널 출력(내용이 advisory 식별자와 종료 코드입니다), 코드
+블록 안. 패키지명·`GHSA-` 식별자·명령은 스캐너가 쓴 그대로 둡니다.
+
+숫자는 일부러 평범한 정수로 출력합니다. 로케일 포맷을 쓰면 같은 판정이 기계마다
+다르게 렌더되고, 리포트는 diff로 비교하라고 만든 것입니다.

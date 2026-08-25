@@ -164,3 +164,23 @@ English is canonical. Korean translations should link to the English source and 
 - [`docs/qa-checklist.md`](./docs/qa-checklist.md)
 
 For vulnerability reports, follow the [organization security policy](https://github.com/zero-shelter/.github/blob/main/SECURITY.md).
+
+## Adding a language
+
+The HTML report is read by people who did not run the command, in whatever
+country they are in. Adding one is three steps and no code beyond strings:
+
+1. Add a catalogue to `src/messages.ts`. `Messages` is a type, so a missing key
+   fails the build rather than rendering English into your page.
+2. Add the code to `LANGUAGES` and to the `--lang` line in `src/cli.ts`'s usage
+   text. A test fails if a shipped language is missing from `--help`.
+3. If the language is written right to left, add its code to `RIGHT_TO_LEFT` in
+   `src/html.ts`. The layout uses logical properties, so it mirrors on its own.
+
+Two things not to translate: the terminal output, whose content is advisory
+identifiers and exit codes, and anything inside a code block. Package names,
+`GHSA-` ids and commands stay as the scanners wrote them.
+
+Numbers are printed as plain integers on purpose. Locale-aware formatting would
+make the same judgement render differently on two machines, and the report is
+meant to be diffable.
