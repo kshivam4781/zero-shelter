@@ -119,3 +119,40 @@ describe("the docs describe the tool that exists", () => {
     }
   });
 });
+
+describe("shipping in more than one language", () => {
+  it("offers every catalogue it ships", async () => {
+    const { LANGUAGES } = await import("../src/messages.js");
+    const usage = cli.slice(cli.indexOf("const USAGE"), cli.indexOf("export async function main"));
+
+    for (const code of Object.keys(LANGUAGES)) {
+      // A language nobody is told about is a translation nobody can reach.
+      expect(usage, `--lang does not list ${code}`).toMatch(new RegExp(`\\b${code}\\b`));
+    }
+  });
+
+  it("tells a translator what to do", () => {
+    const contributing = read("CONTRIBUTING.md");
+
+    expect(contributing).toContain("Adding a language");
+    expect(contributing).toContain("RIGHT_TO_LEFT");
+    // The two things that must not be translated.
+    expect(contributing).toContain("terminal output");
+    expect(contributing).toContain("code block");
+  });
+
+  it("lays the report out without assuming a direction", async () => {
+    const { renderHtml } = await import("../src/html.js");
+    const { judge } = await import("../src/judge.js");
+    const { emptyBaseline } = await import("../src/baseline.js");
+
+    const css = /<style>([\s\S]*?)<\/style>/.exec(
+      renderHtml(judge([], { baseline: emptyBaseline() }), { language: "en" }),
+    )![1]!;
+
+    // Physical properties do not mirror, so a right-to-left translation would
+    // arrive with its numbers and indents on the wrong side.
+    expect(css).not.toMatch(/(margin|padding)-(left|right):/);
+    expect(css).not.toMatch(/text-align:\s*(left|right)/);
+  });
+});

@@ -37,6 +37,15 @@ export interface HtmlOptions {
   readonly command?: string;
 }
 
+/**
+ * Languages written right to left.
+ *
+ * None ship yet. The set exists so that adding a catalogue is the only work a
+ * translator has to do: the layout uses logical properties throughout, so it
+ * mirrors on its own once `dir` is set.
+ */
+const RIGHT_TO_LEFT = new Set(["ar", "fa", "he", "ur"]);
+
 /** Severity as a count of filled blocks, so rank survives without colour. */
 const SEVERITY_RANK: Record<string, number> = {
   critical: 5,
@@ -86,7 +95,7 @@ export function renderHtml(result: JudgeResult, options: HtmlOptions): string {
 
   return [
     "<!doctype html>",
-    `<html lang="${options.language}">`,
+    `<html lang="${options.language}"${RIGHT_TO_LEFT.has(options.language) ? ' dir="rtl"' : ""}>`,
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -611,8 +620,8 @@ body:has(#dark:checked) .theme .dot { background: var(--accent); }
 .count-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
 
 .notes { margin: 18px 0 0; padding: 0; list-style: none; }
-.notes li { color: var(--ink-soft); font-size: 13px; padding-left: 16px; position: relative; margin-block: 5px; }
-.notes li::before { content: "·"; position: absolute; left: 4px; color: var(--ink-faint); }
+.notes li { color: var(--ink-soft); font-size: 13px; padding-inline-start: 16px; position: relative; margin-block: 5px; }
+.notes li::before { content: "·"; position: absolute; inset-inline-start: 4px; color: var(--ink-faint); }
 
 .verdict { margin: 34px 0 0; font-size: 19px; max-width: 62ch; }
 
@@ -639,7 +648,7 @@ body:has(#dark:checked) .theme .dot { background: var(--accent); }
 .clears { font-size: 12px; color: var(--ink-soft); }
 .command--lead .clears { color: var(--accent); font-weight: 560; }
 .copy {
-  margin-left: auto; font: inherit; font-size: 12px; color: var(--ink-soft);
+  margin-inline-start: auto; font: inherit; font-size: 12px; color: var(--ink-soft);
   background: transparent; border: 1px solid var(--rule-strong); border-radius: 4px;
   padding: 4px 10px; cursor: pointer;
   transition: color 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -682,14 +691,14 @@ body:has(#dark:checked) .theme .dot { background: var(--accent); }
 .title { display: block; margin-top: 3px; }
 .c-fix code { font-size: 13px; }
 .c-fix .quiet { display: block; font-size: 11px; }
-.c-num { text-align: right; font-variant-numeric: tabular-nums; }
+.c-num { text-align: end; font-variant-numeric: tabular-nums; }
 .c-src code { font-size: 11px; color: var(--ink-soft); }
-.row .reasons { margin: 0 0 14px; padding-left: 108px; }
+.row .reasons { margin: 0 0 14px; padding-inline-start: 108px; }
 @media (max-width: 900px) {
   .headrow { display: none; }
   .row > summary { grid-template-columns: 92px minmax(0, 1fr) 56px; row-gap: 6px; }
   .c-fix, .c-src { grid-column: 2 / -1; }
-  .row .reasons { padding-left: 0; }
+  .row .reasons { padding-inline-start: 0; }
 }
 
 details summary { cursor: pointer; font-size: 12px; color: var(--ink-faint); padding: 2px 0; }
@@ -697,7 +706,7 @@ details summary:focus-visible { outline: 2px solid var(--accent); outline-offset
 details[open] summary { color: var(--ink-soft); }
 .reasons, .weights ul { list-style: none; margin: 8px 0 12px; padding: 0; font-size: 13px; }
 .reasons li, .weights li { display: flex; gap: 12px; padding: 2px 0; color: var(--ink-soft); }
-.reasons .num, .weights .num { min-width: 34px; text-align: right; color: var(--ink); }
+.reasons .num, .weights .num { min-width: 34px; text-align: end; color: var(--ink); }
 .weights { margin-top: 18px; }
 
 .history { margin-top: 44px; max-width: 78ch; }
@@ -707,7 +716,7 @@ details[open] summary { color: var(--ink-soft); }
 .bar { background: var(--paper); height: 14px; border: 1px solid var(--rule); }
 .bar > span { display: block; height: 100%; background: var(--mark); }
 .run:last-child .bar > span { background: var(--accent); }
-.run-count { text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.run-count { text-align: end; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .run-delta { display: flex; gap: 8px; font-size: 12px; }
 .delta.up { color: var(--ink); }
 .delta.down { color: var(--ink-faint); }
