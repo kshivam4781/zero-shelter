@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.0.6
+
+**Nothing is dropped quietly.** The report showed the last twelve recorded runs
+out of however many exist, the prompt for findings with no published fix named
+eight packages out of however many there were, and the agent hook listed five
+commands out of nine. An agent handed 8 of 324 works through eight and reports
+the job done. All three now say the number they did not show and where the rest
+are, and stay quiet when nothing is hidden.
+
+**The contrast we promised.** PRODUCT.md says text meets WCAG AA; the faint ink
+behind labels and column headers sat at 3.11 against paper, where 4.5 is the
+bar. It is 4.56 now, and a test measures all eight pairs rather than trusting
+the claim.
+
+**Copying works where the report is opened.** The button assumed a clipboard
+API, which browsers refuse or omit for pages opened from disk — the report's
+whole purpose. It falls back to execCommand, and then to selecting the text and
+saying so.
+
+**Ready for a language neither of us speaks.** The layout used physical CSS
+properties, so a right-to-left translation would have arrived with its numbers
+and indents on the wrong side. It uses logical properties now, direction
+follows the language, and CONTRIBUTING says the three steps for adding a
+catalogue in both languages.
+
+**Claims that had no check now have one:** that the tool opens no sockets, that
+a run writes nothing to the repository unless asked, that scoring is integer
+arithmetic, and that the verdict is never a count of things "fixed". One claim
+was corrected instead — the invariant about hashing secrets describes a
+capability v1 does not have, and now says so.
+
 ## 0.0.5
 
 **The report says what to do about it.** The command block explains what a line
