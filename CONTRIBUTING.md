@@ -50,8 +50,9 @@ large refactor:
    when the scope or ownership is unclear.
 3. Create one focused branch, make the smallest useful change, and add a
    fixture or regression test when behavior changes.
-4. Run the checks in the [QA checklist](./docs/qa-checklist.md), then open a PR
-   using the template and include the evidence.
+4. Run the checks in the [QA checklist](./docs/qa-checklist.md). For beta-facing changes, also
+   follow the [Beta QA Guide](./docs/qa/README.md). Then open a PR using the template and include
+   the evidence.
 
 An agent may help with any of these steps, but the human contributor owns the
 scope, correctness, and review of every changed file. Repository-local agent

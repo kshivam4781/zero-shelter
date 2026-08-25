@@ -335,9 +335,10 @@ the code and its tests share the same misunderstanding and nobody notices.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-Feature specifications and QA evidence use the [spec template](./docs/feature-spec-template.md)
-and [QA checklist](./docs/qa-checklist.md). The repository also provides GitHub issue and
-pull request templates for feature, bug, and security-control contributions.
+Feature specifications and QA evidence use the [spec template](./docs/feature-spec-template.md),
+[QA checklist](./docs/qa-checklist.md), and [Beta QA Guide](./docs/qa/README.md). The repository
+also provides GitHub issue and pull request templates for feature, bug, and security-control
+contributions.
 
 ## License
 

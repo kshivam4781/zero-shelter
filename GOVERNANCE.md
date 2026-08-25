@@ -76,3 +76,4 @@ Record decisions in the Issue or PR. If a choice changes an invariant, public co
 - [`SECURITY.md`](./SECURITY.md)
 - [`docs/feature-spec-template.md`](./docs/feature-spec-template.md)
 - [`docs/qa-checklist.md`](./docs/qa-checklist.md)
+- [`docs/qa/README.md`](./docs/qa/README.md)
