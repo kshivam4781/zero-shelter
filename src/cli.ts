@@ -15,6 +15,7 @@ import { parseNpmAudit } from "./ingest/npm-audit.js";
 import { parseOsv } from "./ingest/osv.js";
 import { collect, isWorkspaceRoot } from "./scan.js";
 import { cwdFromPayload, hookContext, hookOutput, readStdin } from "./hook.js";
+import { readInstalledVersions } from "./lockfile.js";
 import { colorEnabled, renderExplain, renderHuman, renderJson } from "./report.js";
 import { renderHtml } from "./html.js";
 import { isLanguage } from "./messages.js";
@@ -192,11 +193,13 @@ export async function main(argv: readonly string[]): Promise<number> {
     return 2;
   }
 
+  const installed = readInstalledVersions(cwd);
   const result = judge(findings, {
     baseline,
     baselineExists,
     skipped,
     workspaceRoot: isWorkspaceRoot(cwd),
+    ...(installed === undefined ? {} : { installed }),
     ...(sources === undefined ? {} : { sources }),
     ...(top === undefined ? {} : { top }),
   });
@@ -496,8 +499,16 @@ async function hook(
     const { baseline, exists } = await loadBaseline(
       resolve(cwd, baselineFlag ?? BASELINE_PATH),
     );
+    // Without this the agent is handed the commands the report stopped
+    // printing, which is the worst place for them: it will run them.
+    const installed = readInstalledVersions(cwd);
     const context = hookContext(
-      judge(findings, { baseline, baselineExists: exists, skipped }),
+      judge(findings, {
+        baseline,
+        baselineExists: exists,
+        skipped,
+        ...(installed === undefined ? {} : { installed }),
+      }),
     );
     if (context !== undefined) process.stdout.write(hookOutput(context));
   } catch {
