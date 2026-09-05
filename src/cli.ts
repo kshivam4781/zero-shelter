@@ -440,7 +440,6 @@ async function record(cwd: string, result: JudgeResult): Promise<string | undefi
     return `cannot write ${path}: ${reasonFor(error)}`;
   }
 }
-}
 
 /**
  * `zero-shelter history` — what happened, in the order it happened.
