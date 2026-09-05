@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, open, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -385,6 +385,35 @@ async function recordedRuns(cwd: string): Promise<{ history?: Change[] }> {
 }
 
 /**
+ * Whether appending to an existing file needs a leading newline first.
+ *
+ * An interrupted write can leave the file ending mid-line. Reads only the
+ * last byte rather than the whole file: history is append-only by design
+ * (see the linked Issue for why read-repair-rewrite is the wrong fix), and a
+ * one-byte read keeps that true.
+ */
+async function needsLeadingNewline(path: string): Promise<boolean> {
+  let handle;
+  try {
+    handle = await open(path, "r");
+  } catch {
+    // No existing file: nothing to separate the new entry from.
+    return false;
+  }
+
+  try {
+    const { size } = await handle.stat();
+    if (size === 0) return false;
+
+    const buffer = Buffer.alloc(1);
+    await handle.read(buffer, 0, 1, size - 1);
+    return buffer.toString("utf8") !== "\n";
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
  * Append one line describing this run.
  *
  * Returns a message when it could not, rather than throwing: a history that
@@ -395,13 +424,22 @@ async function record(cwd: string, result: JudgeResult): Promise<string | undefi
   const path = resolve(cwd, HISTORY_PATH);
   try {
     await mkdir(dirname(path), { recursive: true });
+    // An interrupted write leaves the file without a trailing newline. Left
+    // alone, the next append welds this entry onto that torn line, corrupting
+    // it further and losing the run that just happened — see the Issue.
+    const separator = (await needsLeadingNewline(path)) ? "\n" : "";
     // The only clock in the tool. Everything else stays reproducible; a history
     // without time answers none of the questions it exists for.
-    await appendFile(path, serializeEntry(entryFrom(result, new Date().toISOString())), "utf8");
+    await appendFile(
+      path,
+      separator + serializeEntry(entryFrom(result, new Date().toISOString())),
+      "utf8",
+    );
     return undefined;
   } catch (error) {
     return `cannot write ${path}: ${reasonFor(error)}`;
   }
+}
 }
 
 /**
