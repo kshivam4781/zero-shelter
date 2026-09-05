@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -24,6 +24,7 @@ import { renderSarif } from "./sarif.js";
 import {
   HISTORY_PATH,
   type Change,
+  appendEntry,
   changes,
   entryFrom,
   parseHistory,
@@ -397,7 +398,7 @@ async function record(cwd: string, result: JudgeResult): Promise<string | undefi
     await mkdir(dirname(path), { recursive: true });
     // The only clock in the tool. Everything else stays reproducible; a history
     // without time answers none of the questions it exists for.
-    await appendFile(path, serializeEntry(entryFrom(result, new Date().toISOString())), "utf8");
+    await appendEntry(path, entryFrom(result, new Date().toISOString()));
     return undefined;
   } catch (error) {
     return `cannot write ${path}: ${reasonFor(error)}`;
