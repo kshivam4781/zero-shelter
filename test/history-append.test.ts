@@ -77,4 +77,3 @@ describe("recording after an interrupted write", () => {
     expect(unreadable).toBe(0);
   });
 });
-
