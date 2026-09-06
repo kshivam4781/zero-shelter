@@ -30,7 +30,7 @@ export interface Messages {
   readonly actNowHow: string;
   /**
    * Same section, for a manager `clears` cannot be verified for. No count is
-   * shown beside any line, so the sentence above them must not promise one --
+   * shown beside any line, so the sentence above them must not promise one —
    * see the Issue this fixes for why the guard alone is not enough.
    */
   readonly actNowHowNoCounts: (manager: string) => string;
