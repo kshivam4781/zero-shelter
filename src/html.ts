@@ -216,7 +216,7 @@ function actionBlock(
   return [
     '<section class="act">',
     `<h2>${escape(t.actNow)}</h2>`,
-      `<p class="how">${escape(promises ? t.actNowHow : t.actNowHowNoCounts(manager))}</p>`,
+    `<p class="how">${escape(promises ? t.actNowHow : t.actNowHowNoCounts(manager))}</p>`,
     `<ol class="commands">${rows.join("")}</ol>`,
     workspaceRoot ? `<p class="caveat">${escape(t.workspaceCaveat)}</p>` : "",
     "</section>",
